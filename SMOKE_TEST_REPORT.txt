@@ -1,0 +1,13 @@
+pylrclib smoke test report
+==========================
+
+1. Editable install:
+   python -m pip install -e .
+   Result: PASS
+
+2. CLI help:
+   pylrclib --help
+   Result: PASS
+
+3. Full pytest run:
+...............                                                          [100%]

@@ -1,36 +1,34 @@
 # pylrclib
 
-`pylrclib` 是一个围绕 [LRCLIB](https://lrclib.net/) 的多子命令命令行工具，用来：
+A multi-command CLI around LRCLIB for searching, downloading, inspecting, cleansing, and publishing lyrics.
 
-- 从本地歌词上传到 LRCLIB
-- 从 LRCLIB 下载歌词到本地
-- 检查本地音频 / YAML 元数据 / 歌词匹配结果
-- 清洗和标准化 `.lrc` 文件
-- 诊断工作区和配置
+`pylrclib` treats lyrics as four explicit states:
 
-它把“歌词”明确建模成四种状态：
+- `plain`: unsynced plain-text lyrics
+- `synced`: timed LRC lyrics
+- `mixed`: both plain and synced lyrics are available
+- `instrumental`: instrumental / no-vocals track
 
-- `plain`：纯文本歌词，无时间轴
-- `synced`：滚动歌词，带时间轴（LRC）
-- `mixed`：同时拥有 `plain` 和 `synced`
-- `instrumental`：纯音乐
+That shared model drives all major commands:
 
-这套模型同时服务于：
-
-- `pylrclib up`：上传时自动决定传 plain、synced、mixed 还是 instrumental
-- `pylrclib down`：下载时按策略落盘成 `.txt`、`.lrc` 或两者都保存
+- `pylrclib search`: search LRCLIB and preview remote results
+- `pylrclib down`: download lyrics from LRCLIB to local files
+- `pylrclib up`: publish local lyrics to LRCLIB
+- `pylrclib inspect`: inspect local matching and classification without publishing
+- `pylrclib cleanse`: normalize `.lrc` files
+- `pylrclib doctor`: diagnose workspace and configuration issues
 
 ---
 
-## 1. 安装
+## Installation
 
-### 从源码安装
+### From source
 
 ```bash
 pip install -e .
 ```
 
-### 运行入口
+### Entry points
 
 ```bash
 pylrclib --help
@@ -39,38 +37,133 @@ python -m pylrclib --help
 
 ---
 
-## 2. 命令总览
+## Command overview
 
 ```bash
-pylrclib up ...
+pylrclib search ...
 pylrclib down ...
-pylrclib cleanse ...
+pylrclib up ...
 pylrclib inspect ...
+pylrclib cleanse ...
 pylrclib doctor ...
 ```
 
 ---
 
-## 3. `up`：上传本地歌词到 LRCLIB
+## `search`: search LRCLIB and preview remote records
 
-`up` 会：
+Use `search` when you want to inspect LRCLIB results before downloading or publishing.
 
-1. 扫描音频文件或 YAML 元数据
-2. 查询 LRCLIB 缓存与外部候选歌词
-3. 在本地目录中寻找 `plain` / `synced` 歌词
-4. 自动判断每首歌的歌词类型
-5. 根据 `--lyrics-mode` 决定最终上传策略
-6. 上传成功后移动/重命名歌词文件
+### Query search
 
-### 3.1 最简单用法
+```bash
+pylrclib search --query "song title"
+pylrclib search --title "Song Title" --artist "Artist Name"
+```
+
+### Lookup by LRCLIB id
+
+```bash
+pylrclib search --lrclib-id 12345
+```
+
+### Useful parameters
+
+```bash
+--query TEXT
+--title TEXT
+--artist TEXT
+--album TEXT
+--lrclib-id N
+--limit N
+--preview-lines N
+--json
+--api-base URL
+```
+
+---
+
+## `down`: download lyrics from LRCLIB
+
+`down` supports three input modes:
+
+1. Scan local audio / YAML metadata and query LRCLIB
+2. Manually specify artist/title metadata
+3. Fetch one exact record with `--lrclib-id`
+
+### Download based on local music metadata
+
+```bash
+pylrclib down \
+  --tracks ./music \
+  --output-dir ./lyrics_downloaded
+```
+
+### Download one song manually
+
+```bash
+pylrclib down \
+  --artist "Artist Name" \
+  --title "Song Title" \
+  --album "Album Name" \
+  --duration 180 \
+  --output-dir ./lyrics_downloaded
+```
+
+### Download one exact LRCLIB record
+
+```bash
+pylrclib down \
+  --lrclib-id 12345 \
+  --output-dir ./lyrics_downloaded \
+  --save-mode both
+```
+
+### Save strategy
+
+```bash
+--save-mode auto|plain|synced|both
+```
+
+Default behavior:
+
+- `auto`
+  - if LRCLIB provides synced lyrics, save `.lrc`
+  - if only plain lyrics exist, save `.txt`
+  - if instrumental, report it and do not write lyric files
+- `plain`: save only `.txt`
+- `synced`: save only `.lrc`
+- `both`: save both `.txt` and `.lrc` when available
+
+### Naming strategy
+
+```bash
+--naming auto|track-basename|artist-title
+```
+
+When scanning local files, `auto` prefers the track basename. In manual or id-based downloads, `auto` falls back to `Artist - Title`.
+
+---
+
+## `up`: publish local lyrics to LRCLIB
+
+`up` runs the full upload workflow:
+
+1. Discover audio files or YAML metadata
+2. Check LRCLIB cached and external matches
+3. Resolve local plain and synced lyric candidates
+4. Classify lyrics as `plain`, `synced`, `mixed`, `instrumental`, or `invalid`
+5. Build an upload plan from `--lyrics-mode`
+6. Publish lyrics or mark the track instrumental
+7. Optionally move or rename processed files
+
+### Basic usage
 
 ```bash
 pylrclib up --tracks ./music --lyrics-dir ./lyrics
 ```
 
-如果 `--lyrics-dir` 同时包含 `.txt` 和 `.lrc`，`up` 会自动尝试为同一首歌合并两者。
-
-### 3.2 推荐用法：plain / synced 分目录
+### Recommended split-directory usage
 
 ```bash
 pylrclib up \
@@ -82,84 +175,44 @@ pylrclib up \
   --cleanse
 ```
 
-### 3.3 上传策略：`--lyrics-mode`
+### Upload strategy
 
 ```bash
 --lyrics-mode auto|plain|synced|mixed|instrumental
 ```
 
-默认是：
-
-```bash
---lyrics-mode auto
-```
-
-各模式含义：
+Behavior summary:
 
 - `auto`
-  - 有 plain + synced → 同时上传两者
-  - 只有 synced → 上传 synced，并默认派生 plain
-  - 只有 plain → 只上传 plain
-  - 明确识别为纯音乐 → 上传 instrumental
-  - 无效歌词 → 跳过
+  - plain + synced => publish both
+  - only synced => publish synced and optionally derive plain text
+  - only plain => publish plain only
+  - explicit instrumental markers => publish as instrumental
+  - invalid lyrics => skip
+- `plain`: publish plain lyrics only
+- `synced`: publish synced lyrics and optionally derived plain text
+- `mixed`: require both plain and synced lyrics
+- `instrumental`: force instrumental upload
 
-- `plain`
-  - 只上传 plain
-  - 没有 plain 时跳过
+### Local lyric matching
 
-- `synced`
-  - 上传 synced
-  - 默认可同时带上由 synced 派生出的 plain
+`up` searches for two lyric types separately:
 
-- `mixed`
-  - 必须同时拥有 plain 和 synced
-  - 任一缺失则跳过
-
-- `instrumental`
-  - 强制按纯音乐上传
-
-### 3.4 本地歌词查找规则
-
-`up` 会分别寻找 plain 和 synced 候选：
-
-- `plain`
+- plain candidates:
   - `.txt`
   - `.lyrics`
   - `.lyric`
-
-- `synced`
+- synced candidates:
   - `.lrc`
 
-匹配顺序大致为：
+Matching sources include:
 
-1. 与音频 / YAML 同 basename 的文件
-2. YAML 中显式指定的文件
-3. `Artist - Title.*` 模式匹配
-4. 多候选时交互选择；非交互时优先第一个匹配
+1. same basename as the audio / YAML file
+2. YAML-declared filenames
+3. normalized `Artist - Title.*` matches
+4. interactive selection when multiple candidates exist
 
-### 3.5 纯文本与滚动歌词的识别逻辑
-
-#### 识别为 `synced`
-- 至少存在合法时间戳
-- 能成功解析为 LRC
-
-#### 识别为 `plain`
-- 没有合法时间戳
-- 但存在非空正文文本
-
-#### 识别为 `instrumental`
-- 明确命中纯音乐语义，例如：
-  - `纯音乐，请欣赏`
-  - `instrumental`
-
-#### 识别为 `invalid`
-- 空文件
-- 只有无效文本
-- 无法作为 plain 或 synced 使用
-
-> `invalid` 不会再被自动当成 `instrumental`。
-
-### 3.6 常用参数
+### Important parameters
 
 ```bash
 --tracks PATH
@@ -177,14 +230,9 @@ pylrclib up \
 --ignore-duration-mismatch
 --yes
 --non-interactive
---preview-lines N
---api-base URL
---max-retries N
 ```
 
-### 3.7 YAML 输入
-
-支持的 YAML 字段：
+### YAML input format
 
 ```yaml
 track: Song Title
@@ -197,149 +245,43 @@ lyrics_file: song.lrc
 lrc_file: song.lrc
 ```
 
-说明：
-
-- `plain_file`：显式指定纯文本歌词
-- `synced_file`：显式指定滚动歌词
-- `lyrics_file` / `lrc_file`：兼容地指向一个歌词文件，通常是 `.lrc`
-
 ---
 
-## 4. `down`：从 LRCLIB 下载歌词
+## `inspect`: inspect local matching and classification
 
-`down` 会：
-
-1. 从本地音频 / YAML 读取歌曲元数据，或手动指定 artist/title
-2. 调 LRCLIB 查询歌词
-3. 把返回结果映射为 `plain` / `synced` / `mixed` / `instrumental`
-4. 按 `--save-mode` 决定是否保存 `.txt`、`.lrc` 或两者都保存
-
-### 4.1 从本地音乐库下载
-
-```bash
-pylrclib down \
-  --tracks ./music \
-  --output-dir ./lyrics_downloaded
-```
-
-### 4.2 手动下载单曲
-
-```bash
-pylrclib down \
-  --artist "Artist Name" \
-  --title "Song Title" \
-  --album "Album Name" \
-  --duration 180 \
-  --output-dir ./lyrics_downloaded
-```
-
-### 4.3 下载保存策略：`--save-mode`
-
-```bash
---save-mode auto|plain|synced|both
-```
-
-默认：
-
-```bash
---save-mode auto
-```
-
-语义：
-
-- `auto`
-  - LRCLIB 有 synced → 保存 `.lrc`
-  - 只有 plain → 保存 `.txt`
-  - instrumental → 默认不落盘
-
-- `plain`
-  - 只保存 `.txt`
-
-- `synced`
-  - 只保存 `.lrc`
-
-- `both`
-  - 同时保存 `.txt` 与 `.lrc`
-  - 如 LRCLIB 只有 synced，且允许派生 plain，则会自动生成 `.txt`
-
-### 4.4 命名策略：`--naming`
-
-```bash
---naming auto|track-basename|artist-title
-```
-
-默认：
-
-- 基于本地音频/YAML：`track-basename`
-- 手动模式：`artist-title`
-
-例子：
-
-```text
-song.mp3      -> song.lrc / song.txt
-Artist - Song -> Artist - Song.lrc / Artist - Song.txt
-```
-
-### 4.5 覆盖策略
-
-```bash
---skip-existing
---overwrite
-```
-
-两者不能同时使用。
-
----
-
-## 5. `cleanse`：批量清洗 `.lrc`
-
-`cleanse` 只处理 `.lrc` 文件，不上传。
-
-```bash
-# 只预览，不写回
-pylrclib cleanse ./lyrics
-
-# 清洗并覆盖
-pylrclib cleanse ./lyrics --write
-```
-
-清洗规则：
-
-- 统一换行与编码读取
-- 删除 credit 行（作词、作曲等）
-- 删除同时间戳翻译行
-- 保留标准化后的 synced 内容
-
-安全策略：
-
-- 无合法时间戳的文件会标记为 `invalid`
-- `invalid` 文件不会被覆盖
-- 清洗结果为空但原文件非空时，不会盲目写回
-
----
-
-## 6. `inspect`：检查本地歌词解析结果
+`inspect` shows what the tool would use locally, without publishing.
 
 ```bash
 pylrclib inspect \
   --tracks ./music \
   --plain-dir ./lyrics_plain \
-  --synced-dir ./lyrics_lrc
+  --synced-dir ./lyrics_lrc \
+  --show-all-candidates
 ```
 
-它会输出：
-
-- 发现的输入项
-- plain / synced 候选文件
-- 最终识别的歌词类型
-- plain / synced 预览
-- warnings
-
-这个命令不会上传，也不会移动文件。
+This is useful for debugging why a track resolved to `plain`, `mixed`, or `invalid`.
 
 ---
 
-## 7. `doctor`：诊断工作区与配置
+## `cleanse`: normalize `.lrc` files
+
+`cleanse` cleans synced lyrics safely.
+
+```bash
+pylrclib cleanse ./lyrics_lrc
+pylrclib cleanse ./lyrics_lrc --write
+```
+
+Recommended behavior:
+
+- use `cleanse` to preview / analyze normalization
+- use `--write` only when you really want to rewrite files in place
+
+Invalid files are not blindly rewritten into empty files.
+
+---
+
+## `doctor`: diagnose the current workspace
 
 ```bash
 pylrclib doctor \
@@ -348,93 +290,153 @@ pylrclib doctor \
   --synced-dir ./lyrics_lrc
 ```
 
-会显示：
-
-- 解析后的配置
-- 各目录是否存在
-- 音频 / YAML / plain / synced 文件数量
-- 有效输入数量
-- 常见冲突提示
+`doctor` prints resolved configuration, counts discovered inputs, and highlights obvious workflow conflicts.
 
 ---
 
-## 8. 环境变量
+## Environment variables
 
-支持以下环境变量：
-
-```bash
-export PYLRCLIB_TRACKS_DIR=/data/music
-export PYLRCLIB_LYRICS_DIR=/data/lyrics
-export PYLRCLIB_PLAIN_DIR=/data/lyrics_plain
-export PYLRCLIB_SYNCED_DIR=/data/lyrics_lrc
-export PYLRCLIB_DONE_TRACKS_DIR=/data/done_music
-export PYLRCLIB_DONE_LRC_DIR=/data/done_lyrics
-export PYLRCLIB_OUTPUT_DIR=/data/downloaded_lyrics
-export PYLRCLIB_PREVIEW_LINES=15
-export PYLRCLIB_MAX_HTTP_RETRIES=8
-export PYLRCLIB_USER_AGENT='MyUploader/1.0'
-export PYLRCLIB_API_BASE=https://lrclib.net/api
-```
-
-统一优先级：
+Supported environment variables include:
 
 ```text
-CLI 参数 > 环境变量 > 默认值
+PYLRCLIB_TRACKS_DIR
+PYLRCLIB_LYRICS_DIR
+PYLRCLIB_PLAIN_DIR
+PYLRCLIB_SYNCED_DIR
+PYLRCLIB_DONE_TRACKS_DIR
+PYLRCLIB_DONE_LRC_DIR
+PYLRCLIB_OUTPUT_DIR
+PYLRCLIB_ARTIST
+PYLRCLIB_TITLE
+PYLRCLIB_ALBUM
+PYLRCLIB_DURATION
+PYLRCLIB_LRCLIB_ID
+PYLRCLIB_API_BASE
+PYLRCLIB_USER_AGENT
+PYLRCLIB_PREVIEW_LINES
+PYLRCLIB_MAX_HTTP_RETRIES
 ```
 
 ---
 
-## 9. 项目结构
+## Development
 
-```text
-pylrclib/
-  cli/          CLI 入口
-  commands/     子命令
-  workflows/    上传/下载业务编排
-  api/          LRCLIB 查询、重试、PoW、发布
-  lrc/          LRC 解析、清洗、匹配
-  lyrics/       歌词 bundle 加载与写入
-  fs/           文件移动与清理
-  models/       元数据与歌词模型
-tests/          单元测试 + smoke test
-```
-
----
-
-## 10. 开发与测试
-
-### 运行测试
+Run tests:
 
 ```bash
-pytest
+pytest -q
 ```
 
-### 当前 smoke test 覆盖
+Install dev dependencies:
 
-- `up`：YAML + plain/synced 混合上传
-- `up`：plain-only 自动上传
-- `down`：从 LRCLIB 抓取并同时落 `.txt` + `.lrc`
-- `cleanse`
-- `inspect`
-- `doctor`
+```bash
+pip install -e .[dev]
+```
 
 ---
 
-## 11. 设计原则
+## 中文说明
 
-### 11.1 `up` 不再把无效歌词误当纯音乐
+`pylrclib` 是一个围绕 LRCLIB 的多子命令命令行工具，可用于搜索、下载、检查、清洗和上传歌词。
 
-`invalid`、`plain`、`synced`、`instrumental` 明确区分。
+它把歌词明确建模成四种状态：
 
-### 11.2 `down` 和 `up` 共用同一套歌词模型
+- `plain`：纯文本歌词，无时间轴
+- `synced`：滚动歌词，带时间轴（LRC）
+- `mixed`：同时拥有纯文本歌词和滚动歌词
+- `instrumental`：纯音乐 / 无人声
 
-所以两边对 plain / synced 的理解一致。
+对应的主要命令是：
 
-### 11.3 纯文本歌词与滚动歌词可并存
+- `pylrclib search`：搜索 LRCLIB 并预览远端结果
+- `pylrclib down`：从 LRCLIB 下载歌词到本地
+- `pylrclib up`：把本地歌词上传到 LRCLIB
+- `pylrclib inspect`：只检查本地匹配与分类结果
+- `pylrclib cleanse`：清洗和标准化 `.lrc`
+- `pylrclib doctor`：诊断工作区和配置问题
 
-同一首歌可以同时拥有：
+### `search`
 
-- `song.txt`
-- `song.lrc`
+```bash
+pylrclib search --query "歌名"
+pylrclib search --title "歌名" --artist "歌手"
+pylrclib search --lrclib-id 12345
+```
 
-`pylrclib` 会尽量把它们视为一个逻辑整体，而不是互相覆盖。
+适合用来先确认 LRCLIB 上到底有哪些候选结果，再决定是否下载或上传。
+
+### `down`
+
+`down` 现在支持三种输入方式：
+
+1. 读取本地音频 / YAML 元数据后去 LRCLIB 查询
+2. 手动指定 `--artist` / `--title`
+3. 通过 `--lrclib-id` 精确抓取某一条 LRCLIB 记录
+
+示例：
+
+```bash
+pylrclib down --tracks ./music --output-dir ./lyrics_downloaded
+pylrclib down --artist "歌手" --title "歌名" --output-dir ./lyrics_downloaded
+pylrclib down --lrclib-id 12345 --output-dir ./lyrics_downloaded --save-mode both
+```
+
+保存策略：
+
+```bash
+--save-mode auto|plain|synced|both
+```
+
+- `auto`：有滚动歌词就保存 `.lrc`；只有纯文本就保存 `.txt`
+- `plain`：只保存 `.txt`
+- `synced`：只保存 `.lrc`
+- `both`：两种都保存
+
+### `up`
+
+`up` 会按以下步骤工作：
+
+1. 扫描音频文件或 YAML 元数据
+2. 查询 LRCLIB 缓存与外部歌词候选
+3. 分别查找本地 plain / synced 歌词
+4. 自动识别歌词类型
+5. 根据 `--lyrics-mode` 决定上传策略
+6. 上传成功后按配置移动或重命名文件
+
+推荐用法：
+
+```bash
+pylrclib up \
+  --tracks ./music \
+  --plain-dir ./lyrics_plain \
+  --synced-dir ./lyrics_lrc \
+  --done-lrc ./done_lyrics \
+  --lyrics-mode auto \
+  --cleanse
+```
+
+上传策略：
+
+```bash
+--lyrics-mode auto|plain|synced|mixed|instrumental
+```
+
+默认 `auto` 的逻辑是：
+
+- 同时有 plain 和 synced：一起上传
+- 只有 synced：上传滚动歌词，并可从中派生纯文本歌词
+- 只有 plain：只上传纯文本歌词
+- 明确识别为纯音乐：按纯音乐上传
+- 无效歌词：跳过，不再自动当成纯音乐
+
+### `inspect` / `cleanse` / `doctor`
+
+- `inspect`：查看本地匹配到了哪些歌词文件、最终被识别为什么类型
+- `cleanse`：清洗 `.lrc`，并避免把无效文件误清空
+- `doctor`：查看解析后的配置和当前目录中的可用输入数量
+
+---
+
+## License
+
+MIT

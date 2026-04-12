@@ -22,7 +22,7 @@ def http_request_json(
     timeout: int = 20,
     max_retries: Optional[int] = None,
     treat_404_as_none: bool = True,
-) -> Optional[dict[str, Any]]:
+) -> Any:
     retries = max_retries if max_retries is not None else options.max_http_retries
     for attempt in range(1, retries + 1):
         try:

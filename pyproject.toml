@@ -4,24 +4,47 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylrclib"
-version = "1.1.0"
-description = "A modern multi-command CLI for inspecting, cleansing, and uploading lyrics to LRCLIB."
+version = "1.2.0"
+description = "A multi-command CLI for searching, downloading, inspecting, cleansing, and publishing lyrics around LRCLIB."
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{name = "Harmonese"}]
-license = {text = "MIT"}
-keywords = ["lrclib", "lyrics", "lrc", "music", "cli"]
+authors = [{ name = "Harmonese" }]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["lrclib", "lyrics", "lrc", "karaoke", "cli", "music"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Sound/Audio",
+  "Topic :: Utilities",
+]
 dependencies = [
   "requests>=2.31.0",
   "mutagen>=1.47.0",
-  "PyYAML>=6.0.0"
+  "PyYAML>=6.0.0",
 ]
 
-[tool.setuptools.packages.find]
-include = ["pylrclib*"]
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "build>=1.2.0",
+  "twine>=5.0.0",
+  "ruff>=0.6.0",
+  "mypy>=1.10.0",
+]
 
 [project.scripts]
 pylrclib = "pylrclib.cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["pylrclib*"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

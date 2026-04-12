@@ -157,3 +157,66 @@ def test_doctor_smoke(tmp_path: Path):
     assert result.returncode == 0
     assert "Resolved configuration:" in result.stdout
     assert "Found audio=0, yaml=0" in result.stdout
+
+
+def test_down_by_lrclib_id_smoke(tmp_path: Path):
+    from tests.conftest import fake_lrclib_server
+
+    project_root = Path(__file__).resolve().parents[1]
+    with fake_lrclib_server(
+        by_id_payloads={
+            "123": {
+                "id": 123,
+                "trackName": "Song Title",
+                "artistName": "Artist Name",
+                "albumName": "Album Name",
+                "duration": 180,
+                "plainLyrics": "Hello world\nSecond line",
+                "syncedLyrics": "[00:01.00]Hello world\n[00:02.00]Second line",
+                "instrumental": False,
+            }
+        }
+    ) as (api_base, _state):
+        out = tmp_path / "out"
+        result = _run(
+            project_root,
+            "down",
+            "--lrclib-id", "123",
+            "--output-dir", str(out),
+            "--save-mode", "both",
+            "--yes",
+            "--api-base", api_base,
+        )
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert (out / "Artist Name - Song Title.lrc").exists()
+    assert (out / "Artist Name - Song Title.txt").exists()
+
+
+def test_search_smoke(tmp_path: Path):
+    from tests.conftest import fake_lrclib_server
+
+    project_root = Path(__file__).resolve().parents[1]
+    with fake_lrclib_server(
+        search_payload=[
+            {
+                "id": 42,
+                "trackName": "Song Title",
+                "artistName": "Artist Name",
+                "albumName": "Album Name",
+                "duration": 180,
+                "plainLyrics": "Hello world",
+                "syncedLyrics": "[00:01.00]Hello world",
+                "instrumental": False,
+            }
+        ]
+    ) as (api_base, _state):
+        result = _run(
+            project_root,
+            "search",
+            "--query", "song title",
+            "--api-base", api_base,
+            "--preview-lines", "2",
+        )
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert "#42 Artist Name - Song Title [Album Name] (180s)" in result.stdout
+    assert "--- plainLyrics ---" in result.stdout

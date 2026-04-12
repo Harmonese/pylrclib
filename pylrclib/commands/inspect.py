@@ -4,7 +4,7 @@ from argparse import ArgumentParser, Namespace
 
 from ..config import PREVIEW_LINES_DEFAULT, UNSET, resolve_int
 from ..lyrics import load_local_lyrics_bundle
-from ..workflows.up import discover_inputs
+from ..discovery import discover_inputs
 from .up import _build_config
 
 
@@ -40,7 +40,7 @@ def run(args: Namespace, lang: str) -> int:
     args.allow_derived_plain = True
     config = _build_config(args, lang)
     config.common.preview_lines = resolve_int(args.preview_lines, "PYLRCLIB_PREVIEW_LINES", PREVIEW_LINES_DEFAULT)
-    items = discover_inputs(config)
+    items = discover_inputs(config.tracks_dir)
     print(f"Found {len(items)} item(s).")
     for item in items:
         print(item.label)

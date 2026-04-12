@@ -1,13 +1,45 @@
-pylrclib smoke test report
-==========================
+# pylrclib smoke test report
 
-1. Editable install:
-   python -m pip install -e .
-   Result: PASS
+Date: 2026-04-12
+Version: 1.2.0
 
-2. CLI help:
-   pylrclib --help
-   Result: PASS
+## Completed checks
 
-3. Full pytest run:
-...............                                                          [100%]
+1. Unit and smoke tests
+   - Command: `pytest -q`
+   - Result: PASS
+   - Summary: 23 passed
+
+2. Editable install
+   - Command: `python -m pip install -e .`
+   - Result: PASS
+
+3. CLI entry help
+   - Command: `python -m pylrclib --help`
+   - Result: PASS
+
+4. Search help
+   - Command: `python -m pylrclib search --help`
+   - Result: PASS
+
+5. Down help
+   - Command: `python -m pylrclib down --help`
+   - Result: PASS
+
+6. Up help
+   - Command: `python -m pylrclib up --help`
+   - Result: PASS
+
+## Coverage added in this revision
+
+- `search` command remote search preview
+- `down --lrclib-id` exact record fetch
+- shared interaction layer reuse across commands
+- remote API client methods for `/search` and `/get/{id}`
+- bilingual README refresh
+- packaging metadata refresh for GitHub / PyPI preparation
+
+## Notes
+
+- The project tree was cleaned before packaging to remove cache directories and build artifacts.
+- `pyproject.toml` was adjusted to use SPDX-style `license = "MIT"` without the legacy license classifier so editable installs succeed on modern setuptools.

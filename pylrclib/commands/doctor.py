@@ -4,7 +4,7 @@ from argparse import ArgumentParser, Namespace
 
 from ..config import SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_YAML_EXTENSIONS, SUPPORTED_PLAIN_EXTENSIONS, SUPPORTED_SYNCED_EXTENSIONS, UNSET
 from ..logging_utils import log_info, log_warn
-from ..workflows.up import discover_inputs
+from ..discovery import discover_inputs
 from .up import _build_config
 
 
@@ -83,7 +83,7 @@ def run(args: Namespace, lang: str) -> int:
                 plain_count += count
             else:
                 synced_count += count
-    items = discover_inputs(config)
+    items = discover_inputs(config.tracks_dir)
     print(f"Found audio={audio_count}, yaml={yaml_count}, plain={plain_count}, synced={synced_count}, valid_inputs={len(items)}")
     if errors:
         return 1

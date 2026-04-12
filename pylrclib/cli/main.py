@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from .. import __version__
-from ..commands import cleanse, doctor, down, inspect, up
+from ..commands import cleanse, doctor, down, inspect, search, up
 from ..exceptions import CLIUsageError
 from ..i18n import setup_i18n
 from ..logging_utils import log_error
@@ -29,6 +29,7 @@ def build_parser(lang: str) -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     up.add_parser(subparsers)
     down.add_parser(subparsers)
+    search.add_parser(subparsers)
     cleanse.add_parser(subparsers)
     inspect.add_parser(subparsers)
     doctor.add_parser(subparsers)

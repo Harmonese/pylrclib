@@ -8,3 +8,5 @@ build/
 .mypy_cache/
 .DS_Store
 *.pyc
+tests/
+SMOKE_TEST_REPORT.txt

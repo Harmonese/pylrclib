@@ -22,12 +22,6 @@ That shared model drives all major commands:
 
 ## Installation
 
-### From PyPI (Recommended)
-
-```bash
-pip install pylrclib-cli
-```
-
 ### From source
 
 ```bash
@@ -326,6 +320,12 @@ PYLRCLIB_MAX_HTTP_RETRIES
 ---
 
 ## Development
+
+Run tests:
+
+```bash
+pytest -q
+```
 
 Install dev dependencies:
 

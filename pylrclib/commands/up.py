@@ -3,6 +3,7 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
+from ..cli.helptext import RichHelpFormatter, common_network_help, with_default
 from ..config import (
     DEFAULT_USER_AGENT,
     LRCLIB_BASE,
@@ -23,30 +24,153 @@ LYRICS_MODES = ["auto", "plain", "synced", "mixed", "instrumental"]
 
 
 def add_parser(subparsers) -> ArgumentParser:
-    parser = subparsers.add_parser("up", help="run the full upload workflow")
-    parser.add_argument("--tracks", default=UNSET)
-    parser.add_argument("--lyrics-dir", default=UNSET, help="shared lyrics directory that may contain .lrc and .txt files")
-    parser.add_argument("--plain-dir", default=UNSET)
-    parser.add_argument("--synced-dir", default=UNSET)
-    parser.add_argument("--done-tracks", default=UNSET)
-    parser.add_argument("--done-lrc", default=UNSET)
-    parser.add_argument("-f", "--follow", action="store_true")
-    parser.add_argument("-r", "--rename", action="store_true")
-    parser.add_argument("-c", "--cleanse", action="store_true")
-    parser.add_argument("--cleanse-write", action="store_true")
-    parser.add_argument("--allow-non-lrc", action="store_true")
-    parser.add_argument("--ignore-duration-mismatch", action="store_true")
-    parser.add_argument("--lyrics-mode", default="auto", choices=LYRICS_MODES)
-    parser.add_argument("--allow-derived-plain", action="store_true", default=True)
-    parser.add_argument("--no-derived-plain", dest="allow_derived_plain", action="store_false")
-    parser.add_argument("-d", "--default", nargs=2, metavar=("TRACKS_DIR", "LYRICS_DIR"))
-    parser.add_argument("-m", "--match", action="store_true")
-    parser.add_argument("--preview-lines", default=UNSET)
-    parser.add_argument("--max-retries", default=UNSET)
-    parser.add_argument("--user-agent", default=UNSET)
-    parser.add_argument("--api-base", default=UNSET)
-    parser.add_argument("--yes", action="store_true")
-    parser.add_argument("--non-interactive", action="store_true")
+    net = common_network_help()
+    parser = subparsers.add_parser(
+        "up",
+        help="upload local lyrics to LRCLIB",
+        description=(
+            "Run the full upload workflow. The command scans audio or YAML metadata, resolves local plain and synced lyrics, "
+            "checks LRCLIB for existing records, and optionally publishes new lyrics."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  pylrclib up --tracks ./music --lyrics-dir ./lyrics --yes\n"
+            "  pylrclib up --tracks ./tracks --plain-dir ./plain --synced-dir ./lrc --lyrics-mode mixed\n"
+            "  pylrclib up -d ./tracks ./lyrics"
+        ),
+        formatter_class=RichHelpFormatter,
+    )
+    parser.add_argument(
+        "--tracks",
+        default=UNSET,
+        help=with_default(
+            "Directory containing input audio files or YAML metadata files to upload.",
+            "current working directory, or $PYLRCLIB_TRACKS_DIR when set",
+        ),
+    )
+    parser.add_argument(
+        "--lyrics-dir",
+        default=UNSET,
+        help=with_default(
+            "Shared lyrics directory that may contain both plain text lyrics and synced .lrc files.",
+            "current working directory when neither --plain-dir nor --synced-dir is given; otherwise unset",
+        ),
+    )
+    parser.add_argument(
+        "--plain-dir",
+        default=UNSET,
+        help=with_default(
+            "Directory to search for plain text lyrics such as .txt files.",
+            "same as --lyrics-dir, or current working directory when no lyric directories are provided",
+        ),
+    )
+    parser.add_argument(
+        "--synced-dir",
+        default=UNSET,
+        help=with_default(
+            "Directory to search for synced lyrics such as .lrc files.",
+            "same as --lyrics-dir, or current working directory when no lyric directories are provided",
+        ),
+    )
+    parser.add_argument(
+        "--done-tracks",
+        default=UNSET,
+        help=with_default(
+            "Directory where successfully processed track files are moved after upload.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "--done-lrc",
+        default=UNSET,
+        help=with_default(
+            "Directory where processed lyric files are moved after upload.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "-f", "--follow", action="store_true",
+        help=with_default(
+            "Move matched lyric files to follow the track destination instead of using --done-lrc.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "-r", "--rename", action="store_true",
+        help=with_default(
+            "Rename matched lyric files to use the same base name as the track file when moving.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "-c", "--cleanse", action="store_true",
+        help=with_default(
+            "Cleanse synced .lrc content before upload so invalid or noisy lines are normalized.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "--cleanse-write", action="store_true",
+        help=with_default(
+            "Write cleansed synced lyrics back to disk. Requires --cleanse.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "--allow-non-lrc", action="store_true",
+        help=with_default(
+            "Allow manually selected synced lyric files that do not use the .lrc extension.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "--ignore-duration-mismatch", action="store_true",
+        help=with_default(
+            "Do not warn or stop when LRCLIB returns a record whose duration differs from the local track.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "--lyrics-mode", default="auto", choices=LYRICS_MODES,
+        help=with_default(
+            "Upload strategy: auto chooses the best available lyrics, plain uploads only plain text, synced uploads only LRC, mixed requires both, instrumental publishes instrumental metadata.",
+            "auto",
+        ),
+    )
+    parser.add_argument(
+        "--allow-derived-plain", action="store_true", default=True,
+        help=with_default(
+            "Allow plain lyrics to be derived from synced LRC when no separate plain text file exists.",
+            "enabled",
+        ),
+    )
+    parser.add_argument(
+        "--no-derived-plain", dest="allow_derived_plain", action="store_false",
+        help=with_default(
+            "Disable deriving plain lyrics from synced lyrics.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "-d", "--default", nargs=2, metavar=("TRACKS_DIR", "LYRICS_DIR"),
+        help=with_default(
+            "Shortcut mode: equivalent to setting tracks and one shared lyric directory, then enabling follow, rename, and cleanse together.",
+            "disabled",
+        ),
+    )
+    parser.add_argument(
+        "-m", "--match", action="store_true",
+        help=with_default(
+            "Match mode: enable follow, rename, and cleanse while still using individually resolved directories.",
+            "disabled",
+        ),
+    )
+    parser.add_argument("--preview-lines", default=UNSET, help=net["preview_lines"])
+    parser.add_argument("--max-retries", default=UNSET, help=net["max_retries"])
+    parser.add_argument("--user-agent", default=UNSET, help=net["user_agent"])
+    parser.add_argument("--api-base", default=UNSET, help=net["api_base"])
+    parser.add_argument("--yes", action="store_true", help=net["yes"])
+    parser.add_argument("--non-interactive", action="store_true", help=net["non_interactive"])
     parser.set_defaults(command_handler=run)
     return parser
 

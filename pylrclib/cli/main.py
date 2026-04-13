@@ -8,6 +8,7 @@ from ..commands import cleanse, doctor, down, inspect, search, up
 from ..exceptions import CLIUsageError
 from ..i18n import setup_i18n
 from ..logging_utils import log_error
+from .helptext import RichHelpFormatter, with_default
 
 
 def _detect_lang(argv: list[str]) -> str:
@@ -23,10 +24,38 @@ def _detect_lang(argv: list[str]) -> str:
 
 def build_parser(lang: str) -> argparse.ArgumentParser:
     setup_i18n(lang)
-    parser = argparse.ArgumentParser(prog="pylrclib", description="Upload, download, inspect, and cleanse lyrics around LRCLIB.")
-    parser.add_argument("--lang", "--language", default=lang, choices=["auto", "en_US", "zh_CN"])
+    parser = argparse.ArgumentParser(
+        prog="pylrclib",
+        description=(
+            "Command line tools for uploading, downloading, searching, inspecting, and cleansing lyrics around LRCLIB."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  pylrclib up --tracks ./music --lyrics-dir ./lyrics --yes\n"
+            "  pylrclib down --artist \"Aimer\" --title \"Ref:rain\" --save-mode both\n"
+            "  pylrclib search --query \"artist title\"\n"
+            "  pylrclib cleanse ./lyrics --write"
+        ),
+        formatter_class=RichHelpFormatter,
+    )
+    parser.add_argument(
+        "--lang",
+        "--language",
+        default=lang,
+        choices=["auto", "en_US", "zh_CN"],
+        help=with_default(
+            "Interface language for command output and prompts.",
+            "auto",
+        ),
+    )
     parser.add_argument("--version", action="version", version=f"pylrclib {__version__}")
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True,
+        title="subcommands",
+        metavar="COMMAND",
+        description="Choose one of the commands below.",
+    )
     up.add_parser(subparsers)
     down.add_parser(subparsers)
     search.add_parser(subparsers)

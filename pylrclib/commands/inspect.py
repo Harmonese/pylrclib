@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
 
+from ..cli.helptext import RichHelpFormatter, with_default
 from ..config import PREVIEW_LINES_DEFAULT, UNSET, resolve_int
 from ..lyrics import load_local_lyrics_bundle
 from ..discovery import discover_inputs
@@ -9,14 +10,24 @@ from .up import _build_config
 
 
 def add_parser(subparsers) -> ArgumentParser:
-    parser = subparsers.add_parser("inspect", help="inspect inputs and local lyrics matches without uploading")
-    parser.add_argument("--tracks", default=UNSET)
-    parser.add_argument("--lyrics-dir", default=UNSET)
-    parser.add_argument("--plain-dir", default=UNSET)
-    parser.add_argument("--synced-dir", default=UNSET)
-    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"])
-    parser.add_argument("--preview-lines", default=UNSET)
-    parser.add_argument("--show-all-candidates", action="store_true")
+    parser = subparsers.add_parser(
+        "inspect",
+        help="inspect inputs and local lyrics matches without uploading",
+        description="Inspect local audio or YAML inputs, show matched lyric candidates, and preview the resolved lyrics bundle without uploading anything.",
+        epilog=(
+            "Examples:\n"
+            "  pylrclib inspect --tracks ./music --lyrics-dir ./lyrics\n"
+            "  pylrclib inspect --tracks ./music --plain-dir ./plain --synced-dir ./lrc --show-all-candidates"
+        ),
+        formatter_class=RichHelpFormatter,
+    )
+    parser.add_argument("--tracks", default=UNSET, help=with_default("Directory containing audio or YAML inputs to inspect.", "current working directory, or $PYLRCLIB_TRACKS_DIR when set"))
+    parser.add_argument("--lyrics-dir", default=UNSET, help=with_default("Shared lyrics directory that may contain both plain and synced lyrics.", "current working directory when neither --plain-dir nor --synced-dir is given"))
+    parser.add_argument("--plain-dir", default=UNSET, help=with_default("Directory to search for plain text lyric candidates.", "same as --lyrics-dir"))
+    parser.add_argument("--synced-dir", default=UNSET, help=with_default("Directory to search for synced lyric candidates.", "same as --lyrics-dir"))
+    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"], help=with_default("Resolution strategy used to decide which matched lyrics bundle would be chosen.", "auto"))
+    parser.add_argument("--preview-lines", default=UNSET, help=with_default("How many lyric lines to preview for each resolved bundle.", str(PREVIEW_LINES_DEFAULT)))
+    parser.add_argument("--show-all-candidates", action="store_true", help=with_default("Print every matched plain and synced lyric candidate instead of only the top match.", "disabled"))
     parser.set_defaults(command_handler=run)
     return parser
 

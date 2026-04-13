@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
 
+from ..cli.helptext import RichHelpFormatter, with_default
 from ..config import SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_YAML_EXTENSIONS, SUPPORTED_PLAIN_EXTENSIONS, SUPPORTED_SYNCED_EXTENSIONS, UNSET
 from ..logging_utils import log_info, log_warn
 from ..discovery import discover_inputs
@@ -9,23 +10,34 @@ from .up import _build_config
 
 
 def add_parser(subparsers) -> ArgumentParser:
-    parser = subparsers.add_parser("doctor", help="diagnose the current workspace and resolved configuration")
-    parser.add_argument("--tracks", default=UNSET)
-    parser.add_argument("--lyrics-dir", default=UNSET)
-    parser.add_argument("--plain-dir", default=UNSET)
-    parser.add_argument("--synced-dir", default=UNSET)
-    parser.add_argument("--done-tracks", default=UNSET)
-    parser.add_argument("--done-lrc", default=UNSET)
-    parser.add_argument("-f", "--follow", action="store_true")
-    parser.add_argument("-r", "--rename", action="store_true")
-    parser.add_argument("-c", "--cleanse", action="store_true")
-    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"])
-    parser.add_argument("-d", "--default", nargs=2, metavar=("TRACKS_DIR", "LYRICS_DIR"))
-    parser.add_argument("-m", "--match", action="store_true")
-    parser.add_argument("--preview-lines", default=UNSET)
-    parser.add_argument("--max-retries", default=UNSET)
-    parser.add_argument("--user-agent", default=UNSET)
-    parser.add_argument("--api-base", default=UNSET)
+    parser = subparsers.add_parser(
+        "doctor",
+        help="diagnose the current workspace and resolved configuration",
+        description="Resolve configuration exactly as the upload workflow would, then inspect directories and inputs for common problems.",
+        epilog=(
+            "Examples:\n"
+            "  pylrclib doctor --tracks ./music --lyrics-dir ./lyrics\n"
+            "  pylrclib doctor -d ./tracks ./lyrics\n"
+            "  pylrclib doctor --tracks ./music --plain-dir ./plain --synced-dir ./lrc"
+        ),
+        formatter_class=RichHelpFormatter,
+    )
+    parser.add_argument("--tracks", default=UNSET, help=with_default("Directory containing audio or YAML inputs to validate.", "current working directory, or $PYLRCLIB_TRACKS_DIR when set"))
+    parser.add_argument("--lyrics-dir", default=UNSET, help=with_default("Shared lyrics directory that may contain both plain and synced lyric files.", "current working directory when neither --plain-dir nor --synced-dir is given"))
+    parser.add_argument("--plain-dir", default=UNSET, help=with_default("Directory to validate for plain text lyrics.", "same as --lyrics-dir"))
+    parser.add_argument("--synced-dir", default=UNSET, help=with_default("Directory to validate for synced .lrc lyrics.", "same as --lyrics-dir"))
+    parser.add_argument("--done-tracks", default=UNSET, help=with_default("Directory where processed tracks would be moved after upload.", "disabled"))
+    parser.add_argument("--done-lrc", default=UNSET, help=with_default("Directory where processed lyric files would be moved after upload.", "disabled"))
+    parser.add_argument("-f", "--follow", action="store_true", help=with_default("Validate upload mode where lyric files follow track destinations.", "disabled"))
+    parser.add_argument("-r", "--rename", action="store_true", help=with_default("Validate upload mode where lyric files are renamed to track basenames.", "disabled"))
+    parser.add_argument("-c", "--cleanse", action="store_true", help=with_default("Validate upload mode where synced lyrics are cleansed before upload.", "disabled"))
+    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"], help=with_default("Upload strategy to validate against the current workspace.", "auto"))
+    parser.add_argument("-d", "--default", nargs=2, metavar=("TRACKS_DIR", "LYRICS_DIR"), help=with_default("Shortcut mode that validates the default upload preset using one shared lyric directory.", "disabled"))
+    parser.add_argument("-m", "--match", action="store_true", help=with_default("Validate the match preset that enables follow, rename, and cleanse together.", "disabled"))
+    parser.add_argument("--preview-lines", default=UNSET, help=with_default("How many lyric preview lines upload-like commands would show.", "10"))
+    parser.add_argument("--max-retries", default=UNSET, help=with_default("Maximum HTTP retry attempts the upload workflow would use.", "5"))
+    parser.add_argument("--user-agent", default=UNSET, help=with_default("HTTP User-Agent header the upload workflow would send.", "pylrclib/1.2.0"))
+    parser.add_argument("--api-base", default=UNSET, help=with_default("Base LRCLIB API URL the upload workflow would call.", "https://lrclib.net/api"))
     parser.set_defaults(command_handler=run)
     return parser
 

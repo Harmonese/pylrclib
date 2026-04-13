@@ -27,3 +27,8 @@ The format loosely follows Keep a Changelog and this project uses Semantic Versi
 
 ### Added
 - Verbose `--help` message
+
+## [0.4.3] - 2026-04-13
+
+### Fixed
+- Bugs that causes failure in PyPI distribution

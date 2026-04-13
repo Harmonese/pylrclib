@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylrclib-cli"
-version = "0.4.0"
+version = "0.4.1"
 description = "A multi-command CLI for searching, downloading, inspecting, cleansing, and publishing lyrics around LRCLIB."
 readme = "README.md"
 requires-python = ">=3.10"

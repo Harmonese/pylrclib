@@ -3,7 +3,7 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pylrclib"
+name = "pylrclib-cli"
 version = "0.4.0"
 description = "A multi-command CLI for searching, downloading, inspecting, cleansing, and publishing lyrics around LRCLIB."
 readme = "README.md"

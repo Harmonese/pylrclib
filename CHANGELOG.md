@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows Keep a Changelog and this project uses Semantic Versioning.
 
-## [1.2.0] - 2026-04-12
+## [0.4.0] - 2026-04-13
 
 ### Added
 - Added `pylrclib search` for LRCLIB remote search and record preview.
@@ -17,8 +17,13 @@ The format loosely follows Keep a Changelog and this project uses Semantic Versi
 - Enriched remote lyrics records with LRCLIB id plus track/artist/album metadata.
 - Refreshed packaging metadata and README for a GitHub-ready layout.
 
-## [1.1.0] - 2026-04-12
+## [0.4.1] - 2026-04-13
 
 ### Added
 - Initial `pylrclib` multi-command rebuild with `up`, `down`, `inspect`, `cleanse`, and `doctor`.
 - Unified lyrics model for `plain`, `synced`, `mixed`, and `instrumental` handling.
+
+## [0.4.2] - 2026-04-13
+
+### Added
+- Verbose `--help` message

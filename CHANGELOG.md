@@ -32,3 +32,8 @@ The format loosely follows Keep a Changelog and this project uses Semantic Versi
 
 ### Fixed
 - Bugs that causes failure in PyPI distribution
+
+## [0.4.4] - 2026-04-14
+
+### Fixed
+- Fixed PyPI tag

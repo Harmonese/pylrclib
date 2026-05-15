@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from ..i18n import get_text
 from ..logging_utils import log_error
 
 TIMESTAMP_RE = re.compile(r"\[\d{2}:\d{2}\.\d{2,3}\]")
@@ -71,7 +72,7 @@ def read_text_any(path: Path) -> str:
 
 
 def _contains_cjk(text: str) -> bool:
-    return bool(re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]", text))
+    return bool(re.search(r"[぀-ヿ㐀-䶿一-鿿]", text))
 
 
 def _is_credit(text: str) -> bool:
@@ -86,7 +87,7 @@ def parse_lrc_text(text: str, *, remove_translations: bool = True) -> ParsedLRC:
     raw = text.replace("\r\n", "\n").replace("\r", "\n")
     warnings: list[str] = []
     if not TIMESTAMP_RE.search(raw):
-        warnings.append("no_valid_timestamps")
+        warnings.append(get_text("lrc.no_valid_timestamps"))
         return ParsedLRC("", "", False, False, warnings=warnings, original_text=text)
 
     synced_lines: list[str] = []
@@ -151,8 +152,8 @@ def parse_lrc_file(path: Path, *, remove_translations: bool = True) -> ParsedLRC
     try:
         text = read_text_any(path)
     except Exception as exc:
-        log_error(f"failed to read LRC {path}: {exc}")
-        return ParsedLRC("", "", False, False, warnings=["read_failed"], original_text="")
+        log_error(get_text("lrc.read_error", path=str(path), exc=exc))
+        return ParsedLRC("", "", False, False, warnings=[get_text("lrc.read_failed")], original_text="")
     return parse_lrc_text(text, remove_translations=remove_translations)
 
 
@@ -160,16 +161,16 @@ def cleanse_lrc_file(path: Path, *, write: bool = False, remove_translations: bo
     parsed = parse_lrc_file(path, remove_translations=remove_translations)
     original = parsed.original_text
     if not parsed.has_valid_timestamps:
-        return CleanseResult("invalid", original, None, reason="no_valid_timestamps", parsed=parsed)
+        return CleanseResult(get_text("lrc.status.invalid"), original, None, reason=get_text("lrc.no_valid_timestamps"), parsed=parsed)
     cleaned = parsed.synced
     if original.strip() and not cleaned.strip() and not parsed.is_instrumental:
-        return CleanseResult("invalid", original, None, reason="empty_after_cleanse", parsed=parsed)
+        return CleanseResult(get_text("lrc.status.invalid"), original, None, reason=get_text("lrc.empty_after_cleanse"), parsed=parsed)
     if write and cleaned != original:
         try:
             path.write_text(cleaned, encoding="utf-8")
         except Exception as exc:
-            return CleanseResult("failed", original, cleaned, reason=str(exc), parsed=parsed)
-        return CleanseResult("updated", original, cleaned, parsed=parsed)
+            return CleanseResult(get_text("lrc.status.failed"), original, cleaned, reason=str(exc), parsed=parsed)
+        return CleanseResult(get_text("lrc.status.updated"), original, cleaned, parsed=parsed)
     if cleaned == original:
-        return CleanseResult("unchanged", original, cleaned, parsed=parsed)
-    return CleanseResult("updated", original, cleaned, parsed=parsed)
+        return CleanseResult(get_text("lrc.status.unchanged"), original, cleaned, parsed=parsed)
+    return CleanseResult(get_text("lrc.status.updated"), original, cleaned, parsed=parsed)

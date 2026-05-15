@@ -7,6 +7,7 @@ import requests
 from requests import RequestException
 
 from ..config import CommonOptions
+from ..i18n import get_text
 from ..logging_utils import log_warn
 from ..models import TrackMeta
 from .http import http_request_json
@@ -19,7 +20,7 @@ def request_publish_token(options: CommonOptions) -> Optional[str]:
         options,
         method="POST",
         url=f"{options.lrclib_base}/request-challenge",
-        label="request publish challenge",
+        label=get_text("api.publish_challenge"),
         treat_404_as_none=False,
     )
     if not data:
@@ -74,7 +75,7 @@ def publish_with_retry(options: CommonOptions, meta: TrackMeta, payload: dict[st
             )
         except RequestException as exc:
             if attempt == retries:
-                log_warn(f"{label} failed after {attempt} attempts: {exc}")
+                log_warn(get_text("api.publish_failed", label=label, attempts=attempt, exc=exc))
                 return False
             delay = calculate_backoff(attempt)
             time.sleep(delay)
@@ -87,6 +88,6 @@ def publish_with_retry(options: CommonOptions, meta: TrackMeta, payload: dict[st
             delay = parse_retry_after(response.headers.get("Retry-After")) or calculate_backoff(attempt)
             time.sleep(delay)
             continue
-        log_warn(f"{label} failed with HTTP {response.status_code}: {response.text[:200]}")
+        log_warn(get_text("api.publish_http_fail", label=label, status=response.status_code, text=response.text[:200]))
         return False
     return False

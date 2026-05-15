@@ -6,7 +6,7 @@ import sys
 from .. import __version__
 from ..commands import cleanse, doctor, down, inspect, search, up
 from ..exceptions import CLIUsageError
-from ..i18n import setup_i18n
+from ..i18n import get_text, setup_i18n
 from ..logging_utils import log_error
 from .helptext import RichHelpFormatter, with_default
 
@@ -26,16 +26,8 @@ def build_parser(lang: str) -> argparse.ArgumentParser:
     setup_i18n(lang)
     parser = argparse.ArgumentParser(
         prog="pylrclib",
-        description=(
-            "Command line tools for uploading, downloading, searching, inspecting, and cleansing lyrics around LRCLIB."
-        ),
-        epilog=(
-            "Examples:\n"
-            "  pylrclib up --tracks ./music --lyrics-dir ./lyrics --yes\n"
-            "  pylrclib down --artist \"Aimer\" --title \"Ref:rain\" --save-mode both\n"
-            "  pylrclib search --query \"artist title\"\n"
-            "  pylrclib cleanse ./lyrics --write"
-        ),
+        description=get_text("cli.description"),
+        epilog=get_text("cli.epilog"),
         formatter_class=RichHelpFormatter,
     )
     parser.add_argument(
@@ -44,7 +36,7 @@ def build_parser(lang: str) -> argparse.ArgumentParser:
         default=lang,
         choices=["auto", "en_US", "zh_CN"],
         help=with_default(
-            "Interface language for command output and prompts.",
+            get_text("cli.lang.help"),
             "auto",
         ),
     )
@@ -52,9 +44,9 @@ def build_parser(lang: str) -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(
         dest="command",
         required=True,
-        title="subcommands",
+        title=get_text("cli.subcommands.title"),
         metavar="COMMAND",
-        description="Choose one of the commands below.",
+        description=get_text("cli.subcommands.description"),
     )
     up.add_parser(subparsers)
     down.add_parser(subparsers)
@@ -77,5 +69,5 @@ def main(argv: list[str] | None = None) -> int:
         log_error(str(exc))
         return 2
     except KeyboardInterrupt:
-        log_error("interrupted by user")
+        log_error(get_text("cli.interrupted"))
         return 130

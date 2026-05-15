@@ -41,6 +41,25 @@ pylrclib --help
 python -m pylrclib --help
 ```
 
+### Language / i18n
+
+`pylrclib` supports English (`en_US`) and Chinese (`zh_CN`). The interface language is auto-detected from your system `$LANG` environment variable.
+
+```bash
+# Use Chinese
+pylrclib --lang zh_CN --help
+
+# Use English
+pylrclib --lang en_US --help
+
+# Auto-detect (default)
+pylrclib --lang auto --help
+
+# Or set once per session
+export PYLRCLIB_LANG=zh_CN
+pylrclib --help
+```
+
 ---
 
 ## Command overview

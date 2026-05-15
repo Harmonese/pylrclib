@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from ..config import SUPPORTED_PLAIN_EXTENSIONS, SUPPORTED_SYNCED_EXTENSIONS, UpConfig
+from ..i18n import get_text
 from ..lrc import normalize_name, parse_lrc_file, read_text_any
 from ..lrc.matcher import find_matching_paths, find_yaml_named_candidates, strip_known_suffixes
 from ..models import LyricsBundle, LyricsRecord, TrackMeta, YamlTrackMeta
@@ -39,9 +40,9 @@ def detect_plain_text(text: str) -> ClassifiedText:
     cleaned = _clean_plain_text(text)
     lowered = cleaned.lower()
     if not cleaned:
-        return ClassifiedText(kind="invalid", warnings=["empty_text"])
+        return ClassifiedText(kind="invalid", warnings=[get_text("lyrics.empty_text")])
     if any(phrase.lower() in lowered for phrase in PURE_MUSIC_PHRASES):
-        return ClassifiedText(kind="instrumental", warnings=["instrumental_phrase_detected"])
+        return ClassifiedText(kind="instrumental", warnings=[get_text("lyrics.instrumental_detected")])
     return ClassifiedText(kind="plain", plain=cleaned, warnings=[])
 
 
@@ -164,7 +165,7 @@ def load_local_lyrics_bundle(item, config: UpConfig) -> tuple[LyricsBundle, list
             synced_path = plain_path
             plain_path = None
         else:
-            warnings.append("invalid_plain_candidate")
+            warnings.append(get_text("lyrics.invalid_plain"))
 
     if synced_path:
         classified = _load_synced_candidate(synced_path)
@@ -181,7 +182,7 @@ def load_local_lyrics_bundle(item, config: UpConfig) -> tuple[LyricsBundle, list
         elif classified.kind == "instrumental":
             instrumental = True
         else:
-            warnings.append("invalid_synced_candidate")
+            warnings.append(get_text("lyrics.invalid_synced"))
 
     kind = _bundle_kind(plain_text, synced_text, instrumental, warnings)
     bundle = LyricsBundle(
@@ -209,18 +210,18 @@ def bundle_from_record(record: LyricsRecord, *, mode: str = "auto", allow_derive
         if synced and allow_derived_plain:
             derived = "\n".join(line.split("]", 1)[1] if "]" in line else line for line in synced.splitlines()).strip("\n")
             return LyricsBundle(kind="plain", plain=derived, synced=synced if mode == "mixed" else "")
-        return LyricsBundle(kind="invalid", warnings=["no_plain_lyrics"])
+        return LyricsBundle(kind="invalid", warnings=[get_text("lyrics.no_plain")])
     if mode == "synced":
         if synced:
             return LyricsBundle(kind="synced", synced=synced, plain=plain if allow_derived_plain else "")
-        return LyricsBundle(kind="invalid", warnings=["no_synced_lyrics"])
+        return LyricsBundle(kind="invalid", warnings=[get_text("lyrics.no_synced")])
     if mode == "mixed":
         if synced and plain:
             return LyricsBundle(kind="mixed", plain=plain, synced=synced)
         if synced and allow_derived_plain:
             derived = "\n".join(line.split("]", 1)[1] if "]" in line else line for line in synced.splitlines()).strip("\n")
             return LyricsBundle(kind="mixed", plain=derived, synced=synced)
-        return LyricsBundle(kind="invalid", warnings=["incomplete_mixed_lyrics"])
+        return LyricsBundle(kind="invalid", warnings=[get_text("lyrics.incomplete_mixed")])
     if synced and plain:
         return LyricsBundle(kind="mixed", plain=plain, synced=synced)
     if synced:
@@ -231,4 +232,4 @@ def bundle_from_record(record: LyricsRecord, *, mode: str = "auto", allow_derive
         return LyricsBundle(kind=kind, plain=derived, synced=synced)
     if plain:
         return LyricsBundle(kind="plain", plain=plain)
-    return LyricsBundle(kind="invalid", warnings=["empty_record"])
+    return LyricsBundle(kind="invalid", warnings=[get_text("lyrics.empty_record")])

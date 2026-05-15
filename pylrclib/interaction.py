@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Optional, Sequence, TypeVar
 
+from .i18n import get_text
+
 T = TypeVar('T')
 
 
@@ -16,7 +18,7 @@ class Interaction:
             return True
         if not self.interactive:
             return default
-        suffix = '[Y/n]' if default else '[y/N]'
+        suffix = get_text('prompt.yes_no_yes_default') if default else get_text('prompt.yes_no_no_default')
         answer = input(f'{prompt} {suffix}: ').strip().lower()
         if not answer:
             return default
@@ -33,14 +35,14 @@ class Interaction:
         for index, option in enumerate(options, 1):
             print(f'  {index}) {labeler(option)}')
         while True:
-            answer = input(f'Choose 1-{len(options)} (or Enter to skip): ').strip()
+            answer = input(get_text('prompt.choose_range', max=len(options))).strip()
             if not answer:
                 return None
             if answer.isdigit():
                 selected = int(answer)
                 if 1 <= selected <= len(options):
                     return selected - 1
-            print('Invalid input, try again.')
+            print(get_text('prompt.invalid_input'))
 
     def choose_value(self, title: str, options: Sequence[T], labeler: Callable[[T], str] = str) -> Optional[T]:
         index = self.choose_index(title, options, labeler)
@@ -52,15 +54,15 @@ class Interaction:
         if self.assume_yes or not self.interactive:
             return 'skip'
         while True:
-            answer = input('No local lyrics found. Choose [s]kip / [p]lain-file / [y]synced-file / [i]nstrumental / [q]uit: ').strip().lower()
+            answer = input(get_text('prompt.missing_lyrics_action')).strip().lower()
             if answer in {'s', 'p', 'y', 'i', 'q'}:
                 return {'s': 'skip', 'p': 'plain', 'y': 'synced', 'i': 'instrumental', 'q': 'quit'}[answer]
-            print('Invalid input, try again.')
+            print(get_text('prompt.invalid_input'))
 
     def manual_path(self, *, expected: str) -> Optional[Path]:
         if not self.interactive:
             return None
-        raw = input(f'Enter {expected} file path: ').strip().strip('"').strip("'")
+        raw = input(get_text('prompt.enter_path', expected=expected)).strip().strip('"').strip("'")
         if not raw:
             return None
         path = Path(raw).expanduser()
@@ -68,6 +70,6 @@ class Interaction:
             path = Path.cwd() / path
         path = path.resolve()
         if not path.exists() or not path.is_file():
-            print(f'Invalid file: {path}')
+            print(get_text('prompt.invalid_file', path=path))
             return None
         return path

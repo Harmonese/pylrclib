@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..i18n import get_text
 from ..logging_utils import log_warn
 
 
@@ -14,4 +15,4 @@ def cleanup_empty_dirs(root: Path) -> None:
             if not any(directory.iterdir()):
                 directory.rmdir()
         except OSError as exc:
-            log_warn(f"failed to delete empty directory {directory}: {exc}")
+            log_warn(get_text('fs.delete_dir_failed', dir=str(directory), exc=exc))

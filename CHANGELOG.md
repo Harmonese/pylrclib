@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows Keep a Changelog and this project uses Semantic Versioning.
 
+## [0.4.5] - 2026-05-16
+
+### Added
+- Chinese (zh_CN) i18n support for all CLI output: help text, prompts, log messages, preview labels, status strings, validate errors, and argparse built-in strings.
+- `--lang` / `--language` flag with `auto`, `en_US`, `zh_CN` options. Auto-detects from `$LANG` environment variable.
+- Environment variable `PYLRCLIB_LANG` to override locale without CLI flags.
+
+## [0.4.4] - 2026-04-14
+
+### Fixed
+- Fixed PyPI tag
+
+## [0.4.3] - 2026-04-13
+
+### Fixed
+- Bugs that causes failure in PyPI distribution
+
+## [0.4.2] - 2026-04-13
+
+### Added
+- Verbose `--help` message
+
+## [0.4.1] - 2026-04-13
+
+### Added
+- Initial `pylrclib` multi-command rebuild with `up`, `down`, `inspect`, `cleanse`, and `doctor`.
+- Unified lyrics model for `plain`, `synced`, `mixed`, and `instrumental` handling.
+
 ## [0.4.0] - 2026-04-13
 
 ### Added

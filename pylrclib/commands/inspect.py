@@ -4,6 +4,7 @@ from argparse import ArgumentParser, Namespace
 
 from ..cli.helptext import RichHelpFormatter, with_default
 from ..config import PREVIEW_LINES_DEFAULT, UNSET, resolve_int
+from ..i18n import get_text
 from ..lyrics import load_local_lyrics_bundle
 from ..discovery import discover_inputs
 from .up import _build_config
@@ -12,22 +13,18 @@ from .up import _build_config
 def add_parser(subparsers) -> ArgumentParser:
     parser = subparsers.add_parser(
         "inspect",
-        help="inspect inputs and local lyrics matches without uploading",
-        description="Inspect local audio or YAML inputs, show matched lyric candidates, and preview the resolved lyrics bundle without uploading anything.",
-        epilog=(
-            "Examples:\n"
-            "  pylrclib inspect --tracks ./music --lyrics-dir ./lyrics\n"
-            "  pylrclib inspect --tracks ./music --plain-dir ./plain --synced-dir ./lrc --show-all-candidates"
-        ),
+        help=get_text("cmd.inspect.help"),
+        description=get_text("cmd.inspect.description"),
+        epilog=get_text("cmd.inspect.epilog"),
         formatter_class=RichHelpFormatter,
     )
-    parser.add_argument("--tracks", default=UNSET, help=with_default("Directory containing audio or YAML inputs to inspect.", "current working directory, or $PYLRCLIB_TRACKS_DIR when set"))
-    parser.add_argument("--lyrics-dir", default=UNSET, help=with_default("Shared lyrics directory that may contain both plain and synced lyrics.", "current working directory when neither --plain-dir nor --synced-dir is given"))
-    parser.add_argument("--plain-dir", default=UNSET, help=with_default("Directory to search for plain text lyric candidates.", "same as --lyrics-dir"))
-    parser.add_argument("--synced-dir", default=UNSET, help=with_default("Directory to search for synced lyric candidates.", "same as --lyrics-dir"))
-    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"], help=with_default("Resolution strategy used to decide which matched lyrics bundle would be chosen.", "auto"))
-    parser.add_argument("--preview-lines", default=UNSET, help=with_default("How many lyric lines to preview for each resolved bundle.", str(PREVIEW_LINES_DEFAULT)))
-    parser.add_argument("--show-all-candidates", action="store_true", help=with_default("Print every matched plain and synced lyric candidate instead of only the top match.", "disabled"))
+    parser.add_argument("--tracks", default=UNSET, help=with_default(get_text("cmd.inspect.arg.tracks"), get_text("default.cwd_tracks")))
+    parser.add_argument("--lyrics-dir", default=UNSET, help=with_default(get_text("cmd.inspect.arg.lyrics_dir"), get_text("default.cwd_when_none")))
+    parser.add_argument("--plain-dir", default=UNSET, help=with_default(get_text("cmd.inspect.arg.plain_dir"), get_text("default.same_lyrics_dir")))
+    parser.add_argument("--synced-dir", default=UNSET, help=with_default(get_text("cmd.inspect.arg.synced_dir"), get_text("default.same_lyrics_dir")))
+    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"], help=with_default(get_text("cmd.inspect.arg.lyrics_mode"), get_text("default.auto")))
+    parser.add_argument("--preview-lines", default=UNSET, help=with_default(get_text("cmd.inspect.arg.preview_lines"), str(PREVIEW_LINES_DEFAULT)))
+    parser.add_argument("--show-all-candidates", action="store_true", help=with_default(get_text("cmd.inspect.arg.show_all_candidates"), get_text("default.disabled")))
     parser.set_defaults(command_handler=run)
     return parser
 
@@ -52,7 +49,7 @@ def run(args: Namespace, lang: str) -> int:
     config = _build_config(args, lang)
     config.common.preview_lines = resolve_int(args.preview_lines, "PYLRCLIB_PREVIEW_LINES", PREVIEW_LINES_DEFAULT)
     items = discover_inputs(config.tracks_dir)
-    print(f"Found {len(items)} item(s).")
+    print(get_text("cmd.inspect.found_items", count=len(items)))
     for item in items:
         print(item.label)
         bundle, plain_candidates, synced_candidates = load_local_lyrics_bundle(item, config)

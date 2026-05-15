@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import argparse
 import os
 from typing import Optional
+
+from .i18n_strings import get as _lookup
 
 _CURRENT_LOCALE = "en_US"
 
@@ -17,6 +20,7 @@ def setup_i18n(locale: Optional[str] = None) -> str:
             _CURRENT_LOCALE = "en_US"
     else:
         _CURRENT_LOCALE = value
+    argparse._ = lambda text: _lookup(text, _CURRENT_LOCALE)
     return _CURRENT_LOCALE
 
 
@@ -24,5 +28,5 @@ def get_locale() -> str:
     return _CURRENT_LOCALE
 
 
-def get_text(message: str) -> str:
-    return message
+def get_text(key: str, **kwargs: object) -> str:
+    return _lookup(key, _CURRENT_LOCALE, **kwargs)

@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
+from ..i18n import get_text
 from ..logging_utils import log_warn
 
 
@@ -28,5 +29,5 @@ def move_with_dedup(src: Path, dst_dir: Path, new_name: Optional[str] = None) ->
         shutil.move(str(src), str(target))
         return target
     except Exception as exc:
-        log_warn(f"failed to move {src} -> {dst_dir}: {exc}")
+        log_warn(get_text('fs.move_failed', src=str(src), dst_dir=str(dst_dir), exc=exc))
         return None

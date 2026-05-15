@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..config import CommonOptions
+from ..i18n import get_text
 from ..models import LookupResult, LyricsRecord, TrackMeta
 from .http import http_request_json
 from .publish import build_publish_payload, publish_with_retry
@@ -36,10 +37,10 @@ class ApiClient:
         return LookupResult(record=record, duration_diff=diff, duration_ok=ok, source=source)
 
     def get_cached(self, meta: TrackMeta) -> LookupResult:
-        return self._lookup(meta, 'get-cached', 'cache')
+        return self._lookup(meta, 'get-cached', get_text('wf.up.cached_kind'))
 
     def get_external(self, meta: TrackMeta) -> LookupResult:
-        return self._lookup(meta, 'get', 'external')
+        return self._lookup(meta, 'get', get_text('wf.up.external_kind'))
 
     def get_by_id(self, lrclib_id: int) -> LyricsRecord | None:
         data = http_request_json(
@@ -86,8 +87,8 @@ class ApiClient:
 
     def upload_lyrics(self, meta: TrackMeta, plain: str, synced: str) -> bool:
         payload = build_publish_payload(meta, plain, synced, instrumental=False)
-        return publish_with_retry(self.options, meta, payload, 'upload lyrics')
+        return publish_with_retry(self.options, meta, payload, get_text('api.upload_lyrics'))
 
     def upload_instrumental(self, meta: TrackMeta) -> bool:
         payload = build_publish_payload(meta, None, None, instrumental=True)
-        return publish_with_retry(self.options, meta, payload, 'upload instrumental')
+        return publish_with_retry(self.options, meta, payload, get_text('api.upload_instrumental'))

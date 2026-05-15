@@ -6,6 +6,7 @@ from pathlib import Path
 from ..api import ApiClient
 from ..config import DownConfig
 from ..discovery import discover_inputs
+from ..i18n import get_text
 from ..interaction import Interaction
 from ..logging_utils import log_info, log_warn
 from ..lyrics import bundle_from_record, write_lyrics_bundle
@@ -54,11 +55,11 @@ def run_down(config: DownConfig) -> int:
     client = ApiClient(config.common)
     items = _discover_items(config)
     if not items:
-        log_warn('no supported audio or YAML files found')
+        log_warn(get_text('wf.down.no_inputs'))
         return 0
     written_total = 0
     for item in items:
-        log_info(f'downloading for {item.label}')
+        log_info(get_text('wf.down.downloading', label=item.label))
         result = None
         if config.lrclib_id is not None:
             record = client.get_by_id(config.lrclib_id)
@@ -68,16 +69,16 @@ def run_down(config: DownConfig) -> int:
         else:
             result = client.get_external(item.meta)
         if not result or not result.record:
-            log_warn(f'no lyrics found for {item.label}')
+            log_warn(get_text('wf.down.no_lyrics', label=item.label))
             continue
         bundle = bundle_from_record(result.record, mode='mixed' if config.save_mode == 'both' else 'auto', allow_derived_plain=config.allow_derived_plain)
-        preview('remote plainLyrics', bundle.plain, config.common.preview_lines)
-        preview('remote syncedLyrics', bundle.synced, config.common.preview_lines)
+        preview(get_text('wf.down.remote_plain'), bundle.plain, config.common.preview_lines)
+        preview(get_text('wf.down.remote_synced'), bundle.synced, config.common.preview_lines)
         if getattr(result, 'duration_ok', True) is False and item.meta.duration > 0:
-            if not interaction.confirm(f'Duration differs by {result.duration_diff}s for {item.meta.track}. Save anyway?', default=False):
+            if not interaction.confirm(get_text('wf.down.duration_differs', diff=result.duration_diff, track=item.meta.track), default=False):
                 continue
         if bundle.instrumental:
-            log_info(f'instrumental track reported by LRCLIB: {item.meta.artist} - {item.meta.track}')
+            log_info(get_text('wf.down.instrumental', artist=item.meta.artist, track=item.meta.track))
             continue
         written = write_lyrics_bundle(
             bundle,
@@ -92,7 +93,7 @@ def run_down(config: DownConfig) -> int:
             skip_existing=config.skip_existing,
         )
         for path in written:
-            log_info(f'wrote {path}')
+            log_info(get_text('wf.down.wrote', path=str(path)))
         written_total += len(written)
-    log_info(f'download finished: {written_total} file(s) written')
+    log_info(get_text('wf.down.finished', count=written_total))
     return 0

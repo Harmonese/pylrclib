@@ -3,7 +3,8 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 
 from ..cli.helptext import RichHelpFormatter, with_default
-from ..config import SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_YAML_EXTENSIONS, SUPPORTED_PLAIN_EXTENSIONS, SUPPORTED_SYNCED_EXTENSIONS, UNSET
+from ..config import DEFAULT_USER_AGENT, SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_YAML_EXTENSIONS, SUPPORTED_PLAIN_EXTENSIONS, SUPPORTED_SYNCED_EXTENSIONS, UNSET
+from ..i18n import get_text
 from ..logging_utils import log_info, log_warn
 from ..discovery import discover_inputs
 from .up import _build_config
@@ -12,32 +13,27 @@ from .up import _build_config
 def add_parser(subparsers) -> ArgumentParser:
     parser = subparsers.add_parser(
         "doctor",
-        help="diagnose the current workspace and resolved configuration",
-        description="Resolve configuration exactly as the upload workflow would, then inspect directories and inputs for common problems.",
-        epilog=(
-            "Examples:\n"
-            "  pylrclib doctor --tracks ./music --lyrics-dir ./lyrics\n"
-            "  pylrclib doctor -d ./tracks ./lyrics\n"
-            "  pylrclib doctor --tracks ./music --plain-dir ./plain --synced-dir ./lrc"
-        ),
+        help=get_text("cmd.doctor.help"),
+        description=get_text("cmd.doctor.description"),
+        epilog=get_text("cmd.doctor.epilog"),
         formatter_class=RichHelpFormatter,
     )
-    parser.add_argument("--tracks", default=UNSET, help=with_default("Directory containing audio or YAML inputs to validate.", "current working directory, or $PYLRCLIB_TRACKS_DIR when set"))
-    parser.add_argument("--lyrics-dir", default=UNSET, help=with_default("Shared lyrics directory that may contain both plain and synced lyric files.", "current working directory when neither --plain-dir nor --synced-dir is given"))
-    parser.add_argument("--plain-dir", default=UNSET, help=with_default("Directory to validate for plain text lyrics.", "same as --lyrics-dir"))
-    parser.add_argument("--synced-dir", default=UNSET, help=with_default("Directory to validate for synced .lrc lyrics.", "same as --lyrics-dir"))
-    parser.add_argument("--done-tracks", default=UNSET, help=with_default("Directory where processed tracks would be moved after upload.", "disabled"))
-    parser.add_argument("--done-lrc", default=UNSET, help=with_default("Directory where processed lyric files would be moved after upload.", "disabled"))
-    parser.add_argument("-f", "--follow", action="store_true", help=with_default("Validate upload mode where lyric files follow track destinations.", "disabled"))
-    parser.add_argument("-r", "--rename", action="store_true", help=with_default("Validate upload mode where lyric files are renamed to track basenames.", "disabled"))
-    parser.add_argument("-c", "--cleanse", action="store_true", help=with_default("Validate upload mode where synced lyrics are cleansed before upload.", "disabled"))
-    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"], help=with_default("Upload strategy to validate against the current workspace.", "auto"))
-    parser.add_argument("-d", "--default", nargs=2, metavar=("TRACKS_DIR", "LYRICS_DIR"), help=with_default("Shortcut mode that validates the default upload preset using one shared lyric directory.", "disabled"))
-    parser.add_argument("-m", "--match", action="store_true", help=with_default("Validate the match preset that enables follow, rename, and cleanse together.", "disabled"))
-    parser.add_argument("--preview-lines", default=UNSET, help=with_default("How many lyric preview lines upload-like commands would show.", "10"))
-    parser.add_argument("--max-retries", default=UNSET, help=with_default("Maximum HTTP retry attempts the upload workflow would use.", "5"))
-    parser.add_argument("--user-agent", default=UNSET, help=with_default("HTTP User-Agent header the upload workflow would send.", "pylrclib/1.2.0"))
-    parser.add_argument("--api-base", default=UNSET, help=with_default("Base LRCLIB API URL the upload workflow would call.", "https://lrclib.net/api"))
+    parser.add_argument("--tracks", default=UNSET, help=with_default(get_text("cmd.doctor.arg.tracks"), get_text("default.cwd_tracks")))
+    parser.add_argument("--lyrics-dir", default=UNSET, help=with_default(get_text("cmd.doctor.arg.lyrics_dir"), get_text("default.cwd_when_none")))
+    parser.add_argument("--plain-dir", default=UNSET, help=with_default(get_text("cmd.doctor.arg.plain_dir"), get_text("default.same_lyrics_dir")))
+    parser.add_argument("--synced-dir", default=UNSET, help=with_default(get_text("cmd.doctor.arg.synced_dir"), get_text("default.same_lyrics_dir")))
+    parser.add_argument("--done-tracks", default=UNSET, help=with_default(get_text("cmd.doctor.arg.done_tracks"), get_text("default.disabled")))
+    parser.add_argument("--done-lrc", default=UNSET, help=with_default(get_text("cmd.doctor.arg.done_lrc"), get_text("default.disabled")))
+    parser.add_argument("-f", "--follow", action="store_true", help=with_default(get_text("cmd.doctor.arg.follow"), get_text("default.disabled")))
+    parser.add_argument("-r", "--rename", action="store_true", help=with_default(get_text("cmd.doctor.arg.rename"), get_text("default.disabled")))
+    parser.add_argument("-c", "--cleanse", action="store_true", help=with_default(get_text("cmd.doctor.arg.cleanse"), get_text("default.disabled")))
+    parser.add_argument("--lyrics-mode", default="auto", choices=["auto", "plain", "synced", "mixed", "instrumental"], help=with_default(get_text("cmd.doctor.arg.lyrics_mode"), get_text("default.auto")))
+    parser.add_argument("-d", "--default", nargs=2, metavar=("TRACKS_DIR", "LYRICS_DIR"), help=with_default(get_text("cmd.doctor.arg.default"), get_text("default.disabled")))
+    parser.add_argument("-m", "--match", action="store_true", help=with_default(get_text("cmd.doctor.arg.match"), get_text("default.disabled")))
+    parser.add_argument("--preview-lines", default=UNSET, help=with_default(get_text("cmd.doctor.arg.preview_lines"), "10"))
+    parser.add_argument("--max-retries", default=UNSET, help=with_default(get_text("cmd.doctor.arg.max_retries"), "5"))
+    parser.add_argument("--user-agent", default=UNSET, help=with_default(get_text("cmd.doctor.arg.user_agent"), DEFAULT_USER_AGENT))
+    parser.add_argument("--api-base", default=UNSET, help=with_default(get_text("cmd.doctor.arg.api_base"), "https://lrclib.net/api"))
     parser.set_defaults(command_handler=run)
     return parser
 
@@ -50,7 +46,7 @@ def run(args: Namespace, lang: str) -> int:
     args.non_interactive = True
     args.allow_derived_plain = True
     config = _build_config(args, lang)
-    print("Resolved configuration:")
+    print(get_text("cmd.doctor.resolved_config"))
     print(f"  tracks_dir={config.tracks_dir}")
     print(f"  lyrics_dir={config.lyrics_dir}")
     print(f"  plain_dir={config.plain_dir}")
@@ -67,10 +63,10 @@ def run(args: Namespace, lang: str) -> int:
 
     errors = 0
     if not config.tracks_dir.exists():
-        log_warn(f"tracks_dir does not exist: {config.tracks_dir}")
+        log_warn(get_text("cmd.doctor.tracks_not_exist", path=str(config.tracks_dir)))
         errors += 1
     if config.follow_track and config.done_lrc_dir:
-        log_warn("follow_track and done_lrc_dir should not be combined")
+        log_warn(get_text("cmd.doctor.follow_done_conflict"))
         errors += 1
 
     audio_count = 0
@@ -96,8 +92,8 @@ def run(args: Namespace, lang: str) -> int:
             else:
                 synced_count += count
     items = discover_inputs(config.tracks_dir)
-    print(f"Found audio={audio_count}, yaml={yaml_count}, plain={plain_count}, synced={synced_count}, valid_inputs={len(items)}")
+    print(get_text("cmd.doctor.found_counts", audio=audio_count, yaml=yaml_count, plain=plain_count, synced=synced_count, items=len(items)))
     if errors:
         return 1
-    log_info("doctor finished without fatal issues")
+    log_info(get_text("cmd.doctor.finished_ok"))
     return 0

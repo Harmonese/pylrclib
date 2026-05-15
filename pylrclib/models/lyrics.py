@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from ..i18n import get_text
+
 
 @dataclass(slots=True)
 class LyricsRecord:
@@ -53,13 +55,14 @@ class LyricsRecord:
 
     @property
     def label(self) -> str:
-        prefix = f'#{self.lrclib_id} ' if self.lrclib_id is not None else ''
-        core = ' - '.join(part for part in [self.artist_name, self.track_name] if part)
+        prefix = get_text('model.id_prefix', id=self.lrclib_id) if self.lrclib_id is not None else ''
+        sep = get_text('model.separator')
+        core = sep.join(part for part in [self.artist_name, self.track_name] if part)
         if self.album_name:
-            core = f'{core} [{self.album_name}]' if core else self.album_name
+            core = f'{core}{get_text("model.album_suffix", album=self.album_name)}' if core else self.album_name
         if self.duration is not None:
-            core = f'{core} ({self.duration}s)' if core else f'({self.duration}s)'
-        return (prefix + core).strip() or prefix.rstrip() or '<unknown>'
+            core = f'{core}{get_text("model.duration_suffix", duration=self.duration)}' if core else f'({self.duration}s)'
+        return (prefix + core).strip() or prefix.rstrip() or get_text('model.unknown')
 
 
 @dataclass(slots=True)

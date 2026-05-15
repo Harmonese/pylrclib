@@ -8,6 +8,7 @@ from ..api import ApiClient
 from ..config import UpConfig
 from ..discovery import InputItem, discover_inputs
 from ..fs import cleanup_empty_dirs, move_with_dedup
+from ..i18n import get_text
 from ..interaction import Interaction
 from ..logging_utils import log_error, log_info, log_warn
 from ..lyrics import bundle_from_record, collect_candidate_paths, load_local_lyrics_bundle
@@ -23,16 +24,16 @@ class UploadPlan:
 
 
 def preview(label: str, text: str, max_lines: int) -> None:
-    print(f'--- {label} ---')
+    print(get_text('wf.up.preview_label', label=label))
     if not text:
-        print('[empty]')
+        print(get_text('wf.up.empty'))
         print('-' * 40)
         return
     lines = text.splitlines()
     for line in lines[:max_lines]:
         print(line)
     if len(lines) > max_lines:
-        print(f'... ({len(lines)} lines total)')
+        print(get_text('wf.up.lines_truncated', count=len(lines)))
     print('-' * 40)
 
 
@@ -59,8 +60,8 @@ def resolve_local_bundle(item: InputItem, config: UpConfig, interaction: Interac
 
     from ..lyrics.loader import classify_text
     if plain_candidates or synced_candidates:
-        selected_plain = interaction.choose_value('Multiple plain lyric candidates found:', plain_candidates)
-        selected_synced = interaction.choose_value('Multiple synced lyric candidates found:', synced_candidates)
+        selected_plain = interaction.choose_value(get_text('prompt.multiple_plain'), plain_candidates)
+        selected_synced = interaction.choose_value(get_text('prompt.multiple_synced'), synced_candidates)
         if selected_plain is None and plain_candidates:
             selected_plain = plain_candidates[0]
         if selected_synced is None and synced_candidates:
@@ -99,9 +100,9 @@ def resolve_local_bundle(item: InputItem, config: UpConfig, interaction: Interac
         if action == 'instrumental':
             return LyricsBundle(kind='instrumental', instrumental=True), plain_candidates, synced_candidates
         if action == 'plain':
-            plain_manual = interaction.manual_path(expected='plain lyrics')
+            plain_manual = interaction.manual_path(expected=get_text('lyrics.plain_type'))
         if action == 'synced':
-            synced_manual = interaction.manual_path(expected='synced lyrics')
+            synced_manual = interaction.manual_path(expected=get_text('lyrics.synced_type'))
         if plain_manual or synced_manual:
             plain_candidates = ([plain_manual] if plain_manual else []) + plain_candidates
             synced_candidates = ([synced_manual] if synced_manual else []) + synced_candidates
@@ -163,7 +164,7 @@ def move_files_after_processing(config: UpConfig, item: InputItem, bundle: Lyric
         moved = move_with_dedup(item.original_meta.path, config.done_tracks_dir)
         if moved:
             audio_target_path = moved
-            log_info(f'moved audio to {moved}')
+            log_info(get_text('wf.up.moved_audio', path=str(moved)))
     lrc_path = bundle.synced_path or bundle.plain_path
     if lrc_path:
         target_dir = lrc_path.parent
@@ -182,7 +183,7 @@ def move_files_after_processing(config: UpConfig, item: InputItem, bundle: Lyric
                 new_name = item.original_meta.path.stem
         moved_lrc = move_with_dedup(lrc_path, target_dir, new_name=new_name)
         if moved_lrc:
-            log_info(f'moved lyrics file to {moved_lrc}')
+            log_info(get_text('wf.up.moved_lyrics', path=str(moved_lrc)))
     cleanup_empty_dirs(config.tracks_dir)
     if config.lyrics_dir:
         cleanup_empty_dirs(config.lyrics_dir)
@@ -196,9 +197,9 @@ def _should_use_lookup(config: UpConfig, interaction: Interaction, result: Looku
     if not result.record:
         return False
     if result.duration_ok or config.ignore_duration_mismatch:
-        return interaction.confirm(f'Use {kind} lyrics directly?', default=False)
+        return interaction.confirm(get_text('wf.up.use_directly', kind=kind), default=False)
     return interaction.confirm(
-        f'{kind.capitalize()} lyrics duration differs by {result.duration_diff}s. Use them anyway?',
+        get_text('wf.up.duration_differs', kind=kind.capitalize(), diff=result.duration_diff),
         default=False,
     )
 
@@ -209,7 +210,7 @@ def _upload_record(client: ApiClient, meta: TrackMeta, record: LyricsRecord, con
     if plan.mode == 'instrumental':
         return client.upload_instrumental(meta)
     if plan.mode == 'skip':
-        log_warn(f'remote lyrics skipped: {plan.reason}')
+        log_warn(get_text('wf.up.remote_skipped', reason=plan.reason))
         return False
     return client.upload_lyrics(meta, plan.plain or '', plan.synced or '')
 
@@ -218,52 +219,50 @@ def _preview_bundle(prefix: str, bundle: LyricsBundle, max_lines: int) -> None:
     preview(f'{prefix} plainLyrics', bundle.plain, max_lines)
     preview(f'{prefix} syncedLyrics', bundle.synced, max_lines)
     if bundle.warnings:
-        log_warn(f'{prefix} warnings: {", ".join(bundle.warnings)}')
+        log_warn(f"{prefix} warnings: {', '.join(bundle.warnings)}")
 
 
 def process_item(config: UpConfig, client: ApiClient, item: InputItem, interaction: Interaction) -> None:
-    log_info(f'processing {item.label}')
+    log_info(get_text('wf.up.processing', label=item.label))
 
     cached = client.get_cached(item.api_meta)
     if cached.record:
-        remote_bundle = bundle_from_record(cached.record, mode=config.lyrics_mode, allow_derived_plain=config.allow_derived_plain)
-        _preview_bundle('cached', remote_bundle, config.common.preview_lines)
-        if _should_use_lookup(config, interaction, cached, 'cached'):
+        _preview_bundle(get_text('wf.up.cached_kind'), bundle_from_record(cached.record, mode=config.lyrics_mode, allow_derived_plain=config.allow_derived_plain), config.common.preview_lines)
+        if _should_use_lookup(config, interaction, cached, get_text('wf.up.cached_kind')):
             move_files_after_processing(config, item, LyricsBundle.empty())
-            log_info('accepted cache record; skipped upload')
+            log_info(get_text('wf.up.accepted_cache'))
             return
 
     external = client.get_external(item.api_meta)
     if external.record:
-        remote_bundle = bundle_from_record(external.record, mode=config.lyrics_mode, allow_derived_plain=config.allow_derived_plain)
-        _preview_bundle('external', remote_bundle, config.common.preview_lines)
-        if _should_use_lookup(config, interaction, external, 'external'):
+        _preview_bundle(get_text('wf.up.external_kind'), bundle_from_record(external.record, mode=config.lyrics_mode, allow_derived_plain=config.allow_derived_plain), config.common.preview_lines)
+        if _should_use_lookup(config, interaction, external, get_text('wf.up.external_kind')):
             if _upload_record(client, item.api_meta, external.record, config):
-                log_info('uploaded external lyrics')
+                log_info(get_text('wf.up.uploaded_external'))
                 move_files_after_processing(config, item, LyricsBundle.empty())
                 return
-            log_warn('external upload failed; continuing with local flow')
+            log_warn(get_text('wf.up.external_failed'))
 
     local_bundle, plain_candidates, synced_candidates = resolve_local_bundle(item, config, interaction)
     if plain_candidates:
-        log_info('plain candidates: ' + ', '.join(str(path) for path in plain_candidates))
+        log_info(get_text('wf.up.plain_candidates') + ', '.join(str(path) for path in plain_candidates))
     if synced_candidates:
-        log_info('synced candidates: ' + ', '.join(str(path) for path in synced_candidates))
-    _preview_bundle('local', local_bundle, config.common.preview_lines)
+        log_info(get_text('wf.up.synced_candidates') + ', '.join(str(path) for path in synced_candidates))
+    _preview_bundle(get_text('wf.up.local_kind'), local_bundle, config.common.preview_lines)
     plan = build_upload_plan(local_bundle, mode=config.lyrics_mode, allow_derived_plain=config.allow_derived_plain)
     if plan.mode == 'skip':
-        log_warn(f'skipping upload for {item.label}: {plan.reason}')
+        log_warn(get_text('wf.up.skipping', label=item.label, reason=plan.reason))
         return
     if plan.mode == 'instrumental':
-        if interaction.confirm('Upload as instrumental?', default=False) and client.upload_instrumental(item.api_meta):
+        if interaction.confirm(get_text('wf.up.confirm_instrumental'), default=False) and client.upload_instrumental(item.api_meta):
             move_files_after_processing(config, item, local_bundle)
         return
-    if interaction.confirm(f'Upload local lyrics using strategy {config.lyrics_mode}?', default=False):
+    if interaction.confirm(get_text('wf.up.confirm_upload', mode=config.lyrics_mode), default=False):
         if client.upload_lyrics(item.api_meta, plan.plain or '', plan.synced or ''):
-            log_info('upload completed')
+            log_info(get_text('wf.up.upload_completed'))
             move_files_after_processing(config, item, local_bundle)
         else:
-            log_error('upload failed')
+            log_error(get_text('wf.up.upload_failed'))
 
 
 def run_up(config: UpConfig) -> int:
@@ -271,7 +270,7 @@ def run_up(config: UpConfig) -> int:
     client = ApiClient(config.common)
     items = discover_inputs(config.tracks_dir)
     if not items:
-        log_warn('no supported audio or YAML files found')
+        log_warn(get_text('wf.up.no_inputs'))
         return 0
     for item in items:
         process_item(config, client, item, interaction)

@@ -5,8 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from . import __version__
+
 LRCLIB_BASE = "https://lrclib.net/api"
-DEFAULT_USER_AGENT = "pylrclib/1.2.0"
+DEFAULT_USER_AGENT = f"pylrclib/{__version__}"
 PREVIEW_LINES_DEFAULT = 10
 MAX_HTTP_RETRIES_DEFAULT = 5
 SUPPORTED_AUDIO_EXTENSIONS = {".mp3", ".m4a", ".aac", ".flac", ".wav"}

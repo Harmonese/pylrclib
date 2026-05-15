@@ -17,6 +17,7 @@ from ..config import (
     resolve_str,
 )
 from ..exceptions import CLIUsageError
+from ..i18n import get_text
 from ..workflows.up import run_up
 
 
@@ -27,143 +28,84 @@ def add_parser(subparsers) -> ArgumentParser:
     net = common_network_help()
     parser = subparsers.add_parser(
         "up",
-        help="upload local lyrics to LRCLIB",
-        description=(
-            "Run the full upload workflow. The command scans audio or YAML metadata, resolves local plain and synced lyrics, "
-            "checks LRCLIB for existing records, and optionally publishes new lyrics."
-        ),
-        epilog=(
-            "Examples:\n"
-            "  pylrclib up --tracks ./music --lyrics-dir ./lyrics --yes\n"
-            "  pylrclib up --tracks ./tracks --plain-dir ./plain --synced-dir ./lrc --lyrics-mode mixed\n"
-            "  pylrclib up -d ./tracks ./lyrics"
-        ),
+        help=get_text("cmd.up.help"),
+        description=get_text("cmd.up.description"),
+        epilog=get_text("cmd.up.epilog"),
         formatter_class=RichHelpFormatter,
     )
     parser.add_argument(
         "--tracks",
         default=UNSET,
-        help=with_default(
-            "Directory containing input audio files or YAML metadata files to upload.",
-            "current working directory, or $PYLRCLIB_TRACKS_DIR when set",
-        ),
+        help=with_default(get_text("cmd.up.arg.tracks"), get_text("default.cwd_tracks")),
     )
     parser.add_argument(
         "--lyrics-dir",
         default=UNSET,
-        help=with_default(
-            "Shared lyrics directory that may contain both plain text lyrics and synced .lrc files.",
-            "current working directory when neither --plain-dir nor --synced-dir is given; otherwise unset",
-        ),
+        help=with_default(get_text("cmd.up.arg.lyrics_dir"), get_text("default.cwd_lyrics")),
     )
     parser.add_argument(
         "--plain-dir",
         default=UNSET,
-        help=with_default(
-            "Directory to search for plain text lyrics such as .txt files.",
-            "same as --lyrics-dir, or current working directory when no lyric directories are provided",
-        ),
+        help=with_default(get_text("cmd.up.arg.plain_dir"), get_text("default.same_lyrics")),
     )
     parser.add_argument(
         "--synced-dir",
         default=UNSET,
-        help=with_default(
-            "Directory to search for synced lyrics such as .lrc files.",
-            "same as --lyrics-dir, or current working directory when no lyric directories are provided",
-        ),
+        help=with_default(get_text("cmd.up.arg.synced_dir"), get_text("default.same_lyrics")),
     )
     parser.add_argument(
         "--done-tracks",
         default=UNSET,
-        help=with_default(
-            "Directory where successfully processed track files are moved after upload.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.done_tracks"), get_text("default.disabled")),
     )
     parser.add_argument(
         "--done-lrc",
         default=UNSET,
-        help=with_default(
-            "Directory where processed lyric files are moved after upload.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.done_lrc"), get_text("default.disabled")),
     )
     parser.add_argument(
         "-f", "--follow", action="store_true",
-        help=with_default(
-            "Move matched lyric files to follow the track destination instead of using --done-lrc.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.follow"), get_text("default.disabled")),
     )
     parser.add_argument(
         "-r", "--rename", action="store_true",
-        help=with_default(
-            "Rename matched lyric files to use the same base name as the track file when moving.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.rename"), get_text("default.disabled")),
     )
     parser.add_argument(
         "-c", "--cleanse", action="store_true",
-        help=with_default(
-            "Cleanse synced .lrc content before upload so invalid or noisy lines are normalized.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.cleanse"), get_text("default.disabled")),
     )
     parser.add_argument(
         "--cleanse-write", action="store_true",
-        help=with_default(
-            "Write cleansed synced lyrics back to disk. Requires --cleanse.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.cleanse_write"), get_text("default.disabled")),
     )
     parser.add_argument(
         "--allow-non-lrc", action="store_true",
-        help=with_default(
-            "Allow manually selected synced lyric files that do not use the .lrc extension.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.allow_non_lrc"), get_text("default.disabled")),
     )
     parser.add_argument(
         "--ignore-duration-mismatch", action="store_true",
-        help=with_default(
-            "Do not warn or stop when LRCLIB returns a record whose duration differs from the local track.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.ignore_duration_mismatch"), get_text("default.disabled")),
     )
     parser.add_argument(
         "--lyrics-mode", default="auto", choices=LYRICS_MODES,
-        help=with_default(
-            "Upload strategy: auto chooses the best available lyrics, plain uploads only plain text, synced uploads only LRC, mixed requires both, instrumental publishes instrumental metadata.",
-            "auto",
-        ),
+        help=with_default(get_text("cmd.up.arg.lyrics_mode"), get_text("default.auto")),
     )
     parser.add_argument(
         "--allow-derived-plain", action="store_true", default=True,
-        help=with_default(
-            "Allow plain lyrics to be derived from synced LRC when no separate plain text file exists.",
-            "enabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.allow_derived_plain"), get_text("default.enabled")),
     )
     parser.add_argument(
         "--no-derived-plain", dest="allow_derived_plain", action="store_false",
-        help=with_default(
-            "Disable deriving plain lyrics from synced lyrics.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.no_derived_plain"), get_text("default.disabled")),
     )
     parser.add_argument(
         "-d", "--default", nargs=2, metavar=("TRACKS_DIR", "LYRICS_DIR"),
-        help=with_default(
-            "Shortcut mode: equivalent to setting tracks and one shared lyric directory, then enabling follow, rename, and cleanse together.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.default"), get_text("default.disabled")),
     )
     parser.add_argument(
         "-m", "--match", action="store_true",
-        help=with_default(
-            "Match mode: enable follow, rename, and cleanse while still using individually resolved directories.",
-            "disabled",
-        ),
+        help=with_default(get_text("cmd.up.arg.match"), get_text("default.disabled")),
     )
     parser.add_argument("--preview-lines", default=UNSET, help=net["preview_lines"])
     parser.add_argument("--max-retries", default=UNSET, help=net["max_retries"])
@@ -177,11 +119,11 @@ def add_parser(subparsers) -> ArgumentParser:
 
 def _validate(args: Namespace) -> None:
     if args.follow and args.done_lrc is not UNSET:
-        raise CLIUsageError("--follow and --done-lrc cannot be used together")
+        raise CLIUsageError(get_text("validate.follow_done_conflict"))
     if args.default and args.match:
-        raise CLIUsageError("-d/--default and -m/--match cannot be used together")
+        raise CLIUsageError(get_text("validate.default_match_conflict"))
     if args.cleanse_write and not args.cleanse:
-        raise CLIUsageError("--cleanse-write requires --cleanse")
+        raise CLIUsageError(get_text("validate.cleanse_write_requires_cleanse"))
     if args.default:
         conflicts = [
             (args.follow, "--follow"),
@@ -196,7 +138,7 @@ def _validate(args: Namespace) -> None:
         ]
         active = [name for enabled, name in conflicts if enabled]
         if active:
-            raise CLIUsageError("-d/--default cannot be combined with: " + ", ".join(active))
+            raise CLIUsageError(get_text("validate.default_cannot_combine", names=", ".join(active)))
 
 
 def _build_config(args: Namespace, lang: str) -> UpConfig:

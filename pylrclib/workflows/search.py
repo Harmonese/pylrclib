@@ -4,6 +4,7 @@ import json
 
 from ..api import ApiClient
 from ..config import CommonOptions
+from ..i18n import get_text
 from ..logging_utils import log_warn
 from ..models import LyricsRecord
 from .up import preview
@@ -45,7 +46,7 @@ def run_search(
         print(json.dumps([_record_to_dict(r) for r in records], ensure_ascii=False, indent=2))
         return 0
     if not records:
-        log_warn('no search results')
+        log_warn(get_text('wf.search.no_results'))
         return 0
     for idx, record in enumerate(records, 1):
         print(f'[{idx}] {record.label}')

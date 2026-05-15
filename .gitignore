@@ -10,3 +10,4 @@ build/
 *.pyc
 tests/
 SMOKE_TEST_REPORT.txt
+CLAUDE.md

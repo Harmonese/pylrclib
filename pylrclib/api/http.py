@@ -7,6 +7,7 @@ import requests
 from requests import RequestException
 
 from ..config import CommonOptions
+from ..i18n import get_text
 from ..logging_utils import log_warn
 from .retry import calculate_backoff, is_retryable_status, parse_retry_after
 
@@ -36,10 +37,10 @@ def http_request_json(
             )
         except RequestException as exc:
             if attempt == retries:
-                log_warn(f"{label} failed after {attempt} attempts: {exc}")
+                log_warn(get_text("api.request_failed", label=label, attempts=attempt, exc=exc))
                 return None
             delay = calculate_backoff(attempt)
-            log_warn(f"{label} request error on attempt {attempt}/{retries}: {exc}; retrying in {delay:.1f}s")
+            log_warn(get_text("api.request_error", label=label, attempt=attempt, retries=retries, exc=exc, delay=delay))
             time.sleep(delay)
             continue
 
@@ -49,16 +50,16 @@ def http_request_json(
             try:
                 return response.json()
             except ValueError:
-                log_warn(f"{label} returned invalid JSON: {response.text[:200]}")
+                log_warn(get_text("api.invalid_json", label=label, text=response.text[:200]))
                 return None
         if is_retryable_status(response.status_code):
             if attempt == retries:
-                log_warn(f"{label} failed after {attempt} attempts: HTTP {response.status_code} {response.text[:200]}")
+                log_warn(get_text("api.http_fail_final", label=label, attempts=attempt, status=response.status_code, text=response.text[:200]))
                 return None
             delay = parse_retry_after(response.headers.get("Retry-After")) or calculate_backoff(attempt)
-            log_warn(f"{label} failed with HTTP {response.status_code}; retrying in {delay:.1f}s")
+            log_warn(get_text("api.http_fail_retry", label=label, status=response.status_code, delay=delay))
             time.sleep(delay)
             continue
-        log_warn(f"{label} failed with HTTP {response.status_code}: {response.text[:200]}")
+        log_warn(get_text("api.http_fail_final", label=label, attempts=attempt, status=response.status_code, text=response.text[:200]))
         return None
     return None

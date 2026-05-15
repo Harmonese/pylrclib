@@ -8,6 +8,7 @@ from ..config import (
     MAX_HTTP_RETRIES_DEFAULT,
     PREVIEW_LINES_DEFAULT,
 )
+from ..i18n import get_text
 
 
 class RichHelpFormatter(argparse.RawTextHelpFormatter):
@@ -15,33 +16,33 @@ class RichHelpFormatter(argparse.RawTextHelpFormatter):
 
 
 def with_default(text: str, default: str) -> str:
-    return f"{text} Default: {default}."
+    return f"{text} {get_text('cli.default_template', default=default)}"
 
 
 def common_network_help() -> dict[str, str]:
     return {
         "preview_lines": with_default(
-            "How many lyric lines to preview when showing plain or synced lyrics.",
+            get_text("cli.help.preview_lines"),
             str(PREVIEW_LINES_DEFAULT),
         ),
         "max_retries": with_default(
-            "Maximum HTTP retry attempts for retryable LRCLIB requests.",
+            get_text("cli.help.max_retries"),
             str(MAX_HTTP_RETRIES_DEFAULT),
         ),
         "user_agent": with_default(
-            "HTTP User-Agent header sent to LRCLIB.",
+            get_text("cli.help.user_agent"),
             DEFAULT_USER_AGENT,
         ),
         "api_base": with_default(
-            "Base LRCLIB API URL.",
+            get_text("cli.help.api_base"),
             LRCLIB_BASE,
         ),
         "yes": with_default(
-            "Assume yes for confirmation prompts that would otherwise ask before writing or publishing.",
+            get_text("cli.help.yes"),
             "disabled",
         ),
         "non_interactive": with_default(
-            "Disable interactive prompts and use safe automatic decisions.",
+            get_text("cli.help.non_interactive"),
             "disabled",
         ),
     }

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows Keep a Changelog and this project uses Semantic Versioning.
 
+## [0.4.6] - 2026-05-16
+
+### Changed
+- `__version__` now reads from `pyproject.toml` at runtime, making it the single source of truth for the version number.
+
 ## [0.4.5] - 2026-05-16
 
 ### Added

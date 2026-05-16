@@ -94,7 +94,10 @@ def resolve_int(value: object, env_name: str, default: int) -> int:
             except ValueError:
                 return default
         return default
-    return int(value)
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
 
 
 def resolve_optional_int(value: object, env_name: str) -> Optional[int]:
@@ -108,7 +111,10 @@ def resolve_optional_int(value: object, env_name: str) -> Optional[int]:
             return None
     if value in {None, ""}:
         return None
-    return int(value)
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
 
 
 def resolve_str(value: object, env_name: str, default: str) -> str:

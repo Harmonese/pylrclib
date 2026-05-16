@@ -9,7 +9,7 @@ from typing import Optional
 from ..i18n import get_text
 from ..logging_utils import log_error
 
-TIMESTAMP_RE = re.compile(r"\[\d{2}:\d{2}\.\d{2,3}\]")
+TIMESTAMP_RE = re.compile(r"\[\d{2}:\d{2}(?:\.\d{1,3})?\]")
 EXTENDED_TIMESTAMP_RE = re.compile(r"\[\d{2}:\d{2}(?:\.\d{1,3}(?:-\d{1,3})?)?\]")
 HEADER_TAG_RE = re.compile(r"^\[[a-zA-Z]{2,3}:.+\]$")
 CREDIT_KEYWORDS = (

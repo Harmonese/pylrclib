@@ -79,6 +79,7 @@ def run(args: Namespace, lang: str) -> int:
                 audio_count += 1
             elif path.suffix.lower() in SUPPORTED_YAML_EXTENSIONS:
                 yaml_count += 1
+    seen_dir_ext: set[tuple[Path, frozenset[str]]] = set()
     for directory, exts, counter_name in [
         (config.lyrics_dir, SUPPORTED_PLAIN_EXTENSIONS, "plain"),
         (config.plain_dir, SUPPORTED_PLAIN_EXTENSIONS, "plain"),
@@ -86,6 +87,10 @@ def run(args: Namespace, lang: str) -> int:
         (config.synced_dir, SUPPORTED_SYNCED_EXTENSIONS, "synced"),
     ]:
         if directory and directory.exists():
+            key = (directory.resolve(), frozenset(exts))
+            if key in seen_dir_ext:
+                continue
+            seen_dir_ext.add(key)
             count = sum(1 for path in directory.rglob("*") if path.suffix.lower() in exts)
             if counter_name == "plain":
                 plain_count += count

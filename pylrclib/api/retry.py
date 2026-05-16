@@ -5,6 +5,7 @@ from email.utils import parsedate_to_datetime
 from typing import Optional
 
 RETRYABLE_STATUSES = {408, 425, 429, 500, 502, 503, 504}
+_MAX_RETRY_DELAY = 60.0
 
 
 def calculate_backoff(attempt: int, base: float = 1.0, max_delay: float = 30.0) -> float:
@@ -15,13 +16,14 @@ def parse_retry_after(value: Optional[str]) -> Optional[float]:
     if not value:
         return None
     try:
-        return max(0.0, float(value))
+        delay = float(value)
     except ValueError:
         try:
             dt = parsedate_to_datetime(value)
-            return max(0.0, (dt - dt.now(dt.tzinfo)).total_seconds())
+            delay = (dt - dt.now(dt.tzinfo)).total_seconds()
         except Exception:
             return None
+    return min(max(0.0, delay), _MAX_RETRY_DELAY)
 
 
 def is_retryable_status(status: int) -> bool:
